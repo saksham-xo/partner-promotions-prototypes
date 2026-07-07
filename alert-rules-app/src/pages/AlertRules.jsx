@@ -416,14 +416,9 @@ export default function AlertRules() {
 
           {/* SKU Master */}
           <section className="flex flex-col gap-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-text">SKU Master</h2>
-                <p className="text-xs text-text-secondary mt-0.5">The catalogue table for this client — Material Code, Material Name, Brand Name. Replaces the Plum dependency; the CSV upload populates this table directly.</p>
-              </div>
-              <button onClick={openUploadModal} className="text-sm font-medium text-[#686c9d] cursor-pointer hover:underline flex items-center gap-1.5 shrink-0">
-                <Upload size={14} /> Upload SKU Master
-              </button>
+            <div>
+              <h2 className="text-sm font-semibold text-text">SKU Master</h2>
+              <p className="text-xs text-text-secondary mt-0.5">The catalogue table for this client — Material Code, Material Name, Brand Name. Replaces the Plum dependency; the CSV upload populates this table directly.</p>
             </div>
 
             <div className="border border-border rounded-lg overflow-hidden">
@@ -448,6 +443,12 @@ export default function AlertRules() {
                 </button>
               </div>
               {openAccordions.global && (
+                <>
+                <div className="flex justify-end px-4 py-3 border-b border-border bg-surface">
+                  <button onClick={openUploadModal} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                    <Upload size={14} /> Upload SKU Master
+                  </button>
+                </div>
                 <table className="w-full border-t border-border">
                   <thead>
                     <tr>
@@ -475,6 +476,7 @@ export default function AlertRules() {
                     ))}
                   </tbody>
                 </table>
+                </>
               )}
             </div>
           </section>
@@ -498,11 +500,11 @@ export default function AlertRules() {
             <div className="border border-border rounded-lg overflow-visible">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
                 <button onClick={() => toggleAccordion('local')} className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-sm font-semibold text-text">Line Item Lookup Attributes</span>
-                  {openAccordions.local ? <ChevronUp size={16} className="text-text-secondary" /> : <ChevronDown size={16} className="text-text-secondary" />}
-                </button>
-                <button onClick={openMatchKeyModal} className="text-sm font-medium text-[#686c9d] cursor-pointer hover:underline">
-                  + Add match key
+                  <span className="text-left">
+                    <span className="text-sm font-semibold text-text block">Line Item Lookup Attributes</span>
+                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Client-specific lookup used to resolve OCR line items to a SKU — separate from the SKU Master catalogue above.</span>
+                  </span>
+                  {openAccordions.local ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
                 </button>
               </div>
               {openAccordions.local && (
@@ -517,6 +519,12 @@ export default function AlertRules() {
                     </button>
                   </div>
                 ) : (
+                  <>
+                  <div className="flex justify-end px-4 py-3 border-b border-border bg-surface">
+                    <button onClick={openMatchKeyModal} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                      + Add Match Key
+                    </button>
+                  </div>
                   <table className="w-full">
                     <thead>
                       <tr>
@@ -559,6 +567,7 @@ export default function AlertRules() {
                       ))}
                     </tbody>
                   </table>
+                  </>
                 )
               )}
             </div>
@@ -577,9 +586,6 @@ export default function AlertRules() {
                   <span className="text-sm font-semibold text-text">Invoice Detail Validation Attributes</span>
                   {openAccordions.invoice ? <ChevronUp size={16} className="text-text-secondary" /> : <ChevronDown size={16} className="text-text-secondary" />}
                 </button>
-                <button onClick={openInvoiceAttrModal} className="text-sm font-medium text-[#686c9d] cursor-pointer hover:underline">
-                  + Add new invoice attribute
-                </button>
               </div>
               {openAccordions.invoice && (
                 invoiceAttributes.length === 0 ? (
@@ -593,6 +599,12 @@ export default function AlertRules() {
                     </button>
                   </div>
                 ) : (
+                  <>
+                  <div className="flex justify-end px-4 py-3 border-b border-border bg-surface">
+                    <button onClick={openInvoiceAttrModal} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                      + Add New Invoice Attribute
+                    </button>
+                  </div>
                   <table className="w-full">
                     <thead>
                       <tr>
@@ -635,6 +647,7 @@ export default function AlertRules() {
                       ))}
                     </tbody>
                   </table>
+                  </>
                 )
               )}
             </div>
