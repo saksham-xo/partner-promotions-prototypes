@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronUp, ChevronDown, AlertTriangle, Info, Trash2, MoreHorizontal, Pencil, Upload, Download, ClipboardCheck } from 'lucide-react';
+import { ChevronLeft, ChevronUp, ChevronDown, AlertTriangle, Trash2, MoreHorizontal, Pencil, Upload, Download, ClipboardCheck } from 'lucide-react';
 import { useStore } from '../data/store';
 
 const attributeTypes = [
@@ -420,22 +420,8 @@ export default function AlertRules() {
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee]">
                 <button onClick={() => toggleAccordion('global')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
-                    <span className="text-sm font-semibold text-text flex items-center gap-1.5">
-                      SKU Master fields
-                      <span className="relative group">
-                        <Info size={13} className="text-text-secondary" />
-                        <div className="hidden group-hover:block absolute left-0 top-5 z-20 w-80 bg-surface border border-border rounded-lg shadow-lg p-3 text-xs text-text-secondary font-normal normal-case text-left">
-                          <p className="font-semibold text-text mb-1.5">How a scanned line item resolves to a SKU</p>
-                          <p className="mb-1.5">Scanned invoices reliably carry only <span className="font-medium text-text">Material Name</span> — Material Code is rarely present or legible.</p>
-                          <ol className="list-decimal list-inside space-y-1">
-                            <li><span className="font-medium text-text">Line Item Lookup Attributes</span> (configured separately below, if set for this client) — checked first, only if scanned. An exact match resolves the line item immediately with high confidence.</li>
-                            <li><span className="font-medium text-text">Material Code</span> — checked next, only if scanned. An exact match against this master resolves the line item with high confidence.</li>
-                            <li><span className="font-medium text-text">Material Name</span> — always present, so this is the base signal. Fuzzy-matched against this master; match strength drives the confidence score used to approve, flag for review, or reject.</li>
-                          </ol>
-                        </div>
-                      </span>
-                    </span>
-                    <span className="text-xs text-text-secondary font-normal block mt-0.5">The catalogue table for this client — Material Code, Material Name, Brand Name. Replaces the Plum dependency; the CSV upload populates this table directly.</span>
+                    <span className="text-sm font-semibold text-text block">Catalogue Attributes</span>
+                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Defines the product catalogue schema — Material Code, Material Name, and Brand Name — populated directly via CSV upload.</span>
                   </span>
                   {openAccordions.global ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
                 </button>
@@ -493,7 +479,7 @@ export default function AlertRules() {
                   <div className="w-11 h-11 rounded-full bg-[#FFF1E7] flex items-center justify-center mb-3">
                     <ClipboardCheck size={20} className="text-[#EA6C1E]" />
                   </div>
-                  <p className="text-sm text-text mb-4">Client-specific lookup used to resolve OCR line items to a SKU — separate from the SKU Master catalogue above.</p>
+                  <p className="text-sm text-text mb-4">Program-specific lookup used to resolve OCR scanned Product Names to a particular Product Code</p>
                   <button className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
                     + Add New Line Item Lookup Attribute
                   </button>
@@ -508,17 +494,8 @@ export default function AlertRules() {
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
                 <button onClick={() => toggleAccordion('local')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
-                    <span className="text-sm font-semibold text-text flex items-center gap-1.5">
-                      Line Item Lookup Attributes
-                      <span className="relative group">
-                        <Info size={13} className="text-text-secondary" />
-                        <div className="hidden group-hover:block absolute left-0 top-5 z-20 w-80 bg-surface border border-border rounded-lg shadow-lg p-3 text-xs text-text-secondary font-normal normal-case text-left">
-                          <p className="mb-1.5">A separate, optional table used only to resolve a scanned line item to a SKU — e.g. <span className="font-medium text-text">Batch ID</span> for Lupin. Not every client needs one (Stanley Becker / SBD does not).</p>
-                          <p>Fixed 2-column schema: the match key value and the SKU / product code it maps to. No other fields — the CSV populates this table directly, with no processing.</p>
-                        </div>
-                      </span>
-                    </span>
-                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Client-specific lookup used to resolve OCR line items to a SKU — separate from the SKU Master catalogue above.</span>
+                    <span className="text-sm font-semibold text-text block">Line Item Lookup Attributes</span>
+                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Program-specific lookup used to resolve OCR scanned Product Names to a particular Product Code</span>
                   </span>
                   {openAccordions.local ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
                 </button>
