@@ -97,7 +97,7 @@ export default function AlertRules() {
     }
     setShowMappingModal(false);
   };
-  const [openAccordions, setOpenAccordions] = useState({ global: true, local: true, invoice: true });
+  const [openAccordions, setOpenAccordions] = useState({ global: true, local: true, invoice: true, lorem: true });
   const [openKebab, setOpenKebab] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
@@ -640,6 +640,29 @@ export default function AlertRules() {
                   </table>
                   </>
                 )
+              )}
+            </div>
+          </section>
+
+          {/* Lorem Ipsum Attributes */}
+          <section className="flex flex-col gap-3">
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
+                <button onClick={() => toggleAccordion('lorem')} className="flex-1 flex items-center justify-between cursor-pointer">
+                  <span className="text-sm font-semibold text-text">Lorem Ipsum Attributes</span>
+                  {openAccordions.lorem ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
+                </button>
+              </div>
+              {openAccordions.lorem && (
+                <div className="flex flex-col items-center text-center py-10 px-4">
+                  <div className="w-11 h-11 rounded-full bg-[#FFF1E7] flex items-center justify-center mb-3">
+                    <ClipboardCheck size={20} className="text-[#EA6C1E]" />
+                  </div>
+                  <p className="text-sm text-text mb-4">Add lorem ipsum attributes which are required to run your loyalty logic</p>
+                  <button className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                    + Add New Lorem Ipsum Attribute
+                  </button>
+                </div>
               )}
             </div>
           </section>
