@@ -416,30 +416,28 @@ export default function AlertRules() {
 
           {/* SKU Master */}
           <section className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-text">SKU Master</h2>
-              <p className="text-xs text-text-secondary mt-0.5">The catalogue table for this client — Material Code, Material Name, Brand Name. Replaces the Plum dependency; the CSV upload populates this table directly.</p>
-            </div>
-
             <div className="border border-border rounded-lg overflow-hidden">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee]">
                 <button onClick={() => toggleAccordion('global')} className="flex-1 flex items-center justify-between cursor-pointer">
-                  <span className="text-sm font-semibold text-text flex items-center gap-1.5">
-                    SKU Master fields
-                    <span className="relative group">
-                      <Info size={13} className="text-text-secondary" />
-                      <div className="hidden group-hover:block absolute left-0 top-5 z-20 w-80 bg-surface border border-border rounded-lg shadow-lg p-3 text-xs text-text-secondary font-normal normal-case text-left">
-                        <p className="font-semibold text-text mb-1.5">How a scanned line item resolves to a SKU</p>
-                        <p className="mb-1.5">Scanned invoices reliably carry only <span className="font-medium text-text">Material Name</span> — Material Code is rarely present or legible.</p>
-                        <ol className="list-decimal list-inside space-y-1">
-                          <li><span className="font-medium text-text">Line Item Lookup Attributes</span> (configured separately below, if set for this client) — checked first, only if scanned. An exact match resolves the line item immediately with high confidence.</li>
-                          <li><span className="font-medium text-text">Material Code</span> — checked next, only if scanned. An exact match against this master resolves the line item with high confidence.</li>
-                          <li><span className="font-medium text-text">Material Name</span> — always present, so this is the base signal. Fuzzy-matched against this master; match strength drives the confidence score used to approve, flag for review, or reject.</li>
-                        </ol>
-                      </div>
+                  <span className="text-left">
+                    <span className="text-sm font-semibold text-text flex items-center gap-1.5">
+                      SKU Master fields
+                      <span className="relative group">
+                        <Info size={13} className="text-text-secondary" />
+                        <div className="hidden group-hover:block absolute left-0 top-5 z-20 w-80 bg-surface border border-border rounded-lg shadow-lg p-3 text-xs text-text-secondary font-normal normal-case text-left">
+                          <p className="font-semibold text-text mb-1.5">How a scanned line item resolves to a SKU</p>
+                          <p className="mb-1.5">Scanned invoices reliably carry only <span className="font-medium text-text">Material Name</span> — Material Code is rarely present or legible.</p>
+                          <ol className="list-decimal list-inside space-y-1">
+                            <li><span className="font-medium text-text">Line Item Lookup Attributes</span> (configured separately below, if set for this client) — checked first, only if scanned. An exact match resolves the line item immediately with high confidence.</li>
+                            <li><span className="font-medium text-text">Material Code</span> — checked next, only if scanned. An exact match against this master resolves the line item with high confidence.</li>
+                            <li><span className="font-medium text-text">Material Name</span> — always present, so this is the base signal. Fuzzy-matched against this master; match strength drives the confidence score used to approve, flag for review, or reject.</li>
+                          </ol>
+                        </div>
+                      </span>
                     </span>
+                    <span className="text-xs text-text-secondary font-normal block mt-0.5">The catalogue table for this client — Material Code, Material Name, Brand Name. Replaces the Plum dependency; the CSV upload populates this table directly.</span>
                   </span>
-                  {openAccordions.global ? <ChevronUp size={16} className="text-text-secondary" /> : <ChevronDown size={16} className="text-text-secondary" />}
+                  {openAccordions.global ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
                 </button>
               </div>
               {openAccordions.global && (
@@ -483,25 +481,20 @@ export default function AlertRules() {
 
           {/* Line Item Lookup Attributes */}
           <section className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-text flex items-center gap-1.5">
-                Line Item Lookup Attributes
-                <span className="relative group">
-                  <Info size={13} className="text-text-secondary" />
-                  <div className="hidden group-hover:block absolute left-0 top-5 z-20 w-80 bg-surface border border-border rounded-lg shadow-lg p-3 text-xs text-text-secondary font-normal normal-case text-left">
-                    <p className="mb-1.5">A separate, optional table used only to resolve a scanned line item to a SKU — e.g. <span className="font-medium text-text">Batch ID</span> for Lupin. Not every client needs one (Stanley Becker / SBD does not).</p>
-                    <p>Fixed 2-column schema: the match key value and the SKU / product code it maps to. No other fields — the CSV populates this table directly, with no processing.</p>
-                  </div>
-                </span>
-              </h2>
-              <p className="text-xs text-text-secondary mt-0.5">Client-specific lookup used to resolve OCR line items to a SKU — separate from the SKU Master catalogue above.</p>
-            </div>
-
             <div className="border border-border rounded-lg overflow-visible">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
                 <button onClick={() => toggleAccordion('local')} className="flex items-center gap-2 cursor-pointer">
                   <span className="text-left">
-                    <span className="text-sm font-semibold text-text block">Line Item Lookup Attributes</span>
+                    <span className="text-sm font-semibold text-text flex items-center gap-1.5">
+                      Line Item Lookup Attributes
+                      <span className="relative group">
+                        <Info size={13} className="text-text-secondary" />
+                        <div className="hidden group-hover:block absolute left-0 top-5 z-20 w-80 bg-surface border border-border rounded-lg shadow-lg p-3 text-xs text-text-secondary font-normal normal-case text-left">
+                          <p className="mb-1.5">A separate, optional table used only to resolve a scanned line item to a SKU — e.g. <span className="font-medium text-text">Batch ID</span> for Lupin. Not every client needs one (Stanley Becker / SBD does not).</p>
+                          <p>Fixed 2-column schema: the match key value and the SKU / product code it maps to. No other fields — the CSV populates this table directly, with no processing.</p>
+                        </div>
+                      </span>
+                    </span>
                     <span className="text-xs text-text-secondary font-normal block mt-0.5">Client-specific lookup used to resolve OCR line items to a SKU — separate from the SKU Master catalogue above.</span>
                   </span>
                   {openAccordions.local ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
@@ -575,16 +568,14 @@ export default function AlertRules() {
 
           {/* Invoice Detail Validation Attributes */}
           <section className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-text">Invoice Detail Validation Attributes</h2>
-              <p className="text-xs text-text-secondary mt-0.5">Header-level fields, each validated against its own master data — e.g. scanned stockist name against a verified stockist list.</p>
-            </div>
-
             <div className="border border-border rounded-lg overflow-visible">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
                 <button onClick={() => toggleAccordion('invoice')} className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-sm font-semibold text-text">Invoice Detail Validation Attributes</span>
-                  {openAccordions.invoice ? <ChevronUp size={16} className="text-text-secondary" /> : <ChevronDown size={16} className="text-text-secondary" />}
+                  <span className="text-left">
+                    <span className="text-sm font-semibold text-text block">Invoice Detail Validation Attributes</span>
+                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Header-level fields, each validated against its own master data — e.g. scanned stockist name against a verified stockist list.</span>
+                  </span>
+                  {openAccordions.invoice ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
                 </button>
               </div>
               {openAccordions.invoice && (
