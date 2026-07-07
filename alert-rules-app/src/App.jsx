@@ -15,6 +15,11 @@ import CreateAlert from './pages/CreateAlert';
 import CreateApproveRule from './pages/CreateApproveRule';
 import ViewApproveRule from './pages/ViewApproveRule';
 import EditApproveRule from './pages/EditApproveRule';
+import CreateLookupAttribute from './pages/CreateLookupAttribute';
+import ManageLookupAttribute from './pages/ManageLookupAttribute';
+import MappingForm from './pages/MappingForm';
+import CreateInvoiceAttribute from './pages/CreateInvoiceAttribute';
+import ManageInvoiceAttribute from './pages/ManageInvoiceAttribute';
 
 export default function App() {
   return (
@@ -42,6 +47,12 @@ export default function App() {
                 <Route path="/partner-promotions/invoice-management/settings/approve/create" element={<CreateApproveRule />} />
                 <Route path="/partner-promotions/invoice-management/settings/approve/:id" element={<ViewApproveRule />} />
                 <Route path="/partner-promotions/invoice-management/settings/approve/:id/edit" element={<EditApproveRule />} />
+                <Route path="/partner-promotions/invoice-management/settings/lookup-attributes/create" element={<CreateLookupAttribute />} />
+                <Route path="/partner-promotions/invoice-management/settings/lookup-attributes/:id" element={<ManageLookupAttribute />} />
+                <Route path="/partner-promotions/invoice-management/settings/lookup-attributes/:id/mapping/create" element={<MappingForm />} />
+                <Route path="/partner-promotions/invoice-management/settings/lookup-attributes/:id/mapping/:mappingId/edit" element={<MappingForm />} />
+                <Route path="/partner-promotions/invoice-management/settings/invoice-attributes/create" element={<CreateInvoiceAttribute />} />
+                <Route path="/partner-promotions/invoice-management/settings/invoice-attributes/:id" element={<ManageInvoiceAttribute />} />
                 <Route path="/alerts-extended" element={<AlertsExtended />} />
                 <Route path="/alert-dashboard" element={<AlertDashboard />} />
                 <Route path="/role-permissions" element={<RolePermissions />} />

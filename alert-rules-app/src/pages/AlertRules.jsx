@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronUp, ChevronDown, AlertTriangle, Trash2, MoreHorizontal, Pencil, Upload, Download, ClipboardCheck } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ChevronLeft, ChevronUp, ChevronDown, AlertTriangle, MoreHorizontal, Pencil, Upload, Download, ClipboardCheck } from 'lucide-react';
 import { useStore } from '../data/store';
 
 const attributeTypes = [
@@ -50,58 +50,21 @@ const defaultAlerts = [
 
 export default function AlertRules() {
   const navigate = useNavigate();
-  const { rules, toggleRule, saveRule, showToast, devNotes, globalAttributes, matchKeys, addMatchKey, deleteMatchKey, addMatchKeyRecord, updateMatchKeyRecord, toggleMatchKeyRecord, invoiceAttributes, addInvoiceAttribute, deleteInvoiceAttribute } = useStore();
-
-  const [showMatchKeyModal, setShowMatchKeyModal] = useState(false);
-  const [matchKeyDraft, setMatchKeyDraft] = useState({ name: '', apiKey: '' });
-
-  const MATCH_KEY_PAGE_SIZE = 5;
-  const [showManageMatchKey, setShowManageMatchKey] = useState(false);
-  const [manageMatchKeyId, setManageMatchKeyId] = useState(null);
-  const [matchKeySearch, setMatchKeySearch] = useState('');
-  const [matchKeyPage, setMatchKeyPage] = useState(1);
-  const [showMappingModal, setShowMappingModal] = useState(false);
-  const [mappingDraft, setMappingDraft] = useState({ id: null, keyValue: '', skuCode: '' });
-
-  const openManageMatchKey = (matchKeyId) => {
-    setManageMatchKeyId(matchKeyId);
-    setMatchKeySearch('');
-    setMatchKeyPage(1);
-    setShowManageMatchKey(true);
-  };
-  const manageMatchKeyTarget = matchKeys.find(k => k.id === manageMatchKeyId) || null;
-  const filteredMappingRecords = manageMatchKeyTarget
-    ? manageMatchKeyTarget.records.filter(r =>
-        r.keyValue.toLowerCase().includes(matchKeySearch.toLowerCase()) ||
-        r.skuCode.toLowerCase().includes(matchKeySearch.toLowerCase()))
-    : [];
-  const pagedMappingRecords = filteredMappingRecords.slice(
-    (matchKeyPage - 1) * MATCH_KEY_PAGE_SIZE,
-    matchKeyPage * MATCH_KEY_PAGE_SIZE
-  );
-
-  const openMappingModal = (record = null) => {
-    setMappingDraft(record ? { id: record.id, keyValue: record.keyValue, skuCode: record.skuCode } : { id: null, keyValue: '', skuCode: '' });
-    setShowMappingModal(true);
-  };
-  const saveMapping = () => {
-    const keyValue = mappingDraft.keyValue.trim();
-    const skuCode = mappingDraft.skuCode.trim();
-    if (!keyValue || !skuCode) { showToast(`${manageMatchKeyTarget?.name || 'Match key'} value and SKU code are both required`); return; }
-    if (mappingDraft.id) {
-      updateMatchKeyRecord(manageMatchKeyId, mappingDraft.id, { keyValue, skuCode });
-      showToast('Mapping updated');
-    } else {
-      addMatchKeyRecord(manageMatchKeyId, { keyValue, skuCode });
-      showToast('Mapping added');
-    }
-    setShowMappingModal(false);
-  };
-  const [openAccordions, setOpenAccordions] = useState({ global: true, local: true, invoice: true, lorem: true });
+  const location = useLocation();
+  const isDefaultMode = new URLSearchParams(location.search).get('default') === 'true';
+  const { rules, toggleRule, saveRule, showToast, devNotes, globalAttributes, catalogueRecords, matchKeys, invoiceAttributes } = useStore();
+  const [openAccordions, setOpenAccordions] = useState({ global: true, local: true, invoice: true });
   const [openKebab, setOpenKebab] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const fileInputRef = useRef(null);
+
+  const [showViewCatalogueModal, setShowViewCatalogueModal] = useState(false);
+  const [catalogueSearch, setCatalogueSearch] = useState('');
+  const filteredCatalogueRecords = catalogueRecords.filter(r =>
+    r.code.toLowerCase().includes(catalogueSearch.toLowerCase()) ||
+    r.name.toLowerCase().includes(catalogueSearch.toLowerCase())
+  );
 
   const openUploadModal = () => { setUploadFile(null); setShowUploadModal(true); };
   const handleUploadFile = (e) => {
@@ -110,73 +73,28 @@ export default function AlertRules() {
   };
   const submitUpload = () => {
     setShowUploadModal(false);
-    showToast('SKU Master file uploaded — table updated');
+    showToast('Catalogue file uploaded — table updated');
   };
-
-  const [showInvoiceAttrModal, setShowInvoiceAttrModal] = useState(false);
-  const [invoiceAttrDraft, setInvoiceAttrDraft] = useState({ name: '', apiKey: '', type: 'string', masterSource: '' });
-  const [showMasterUploadModal, setShowMasterUploadModal] = useState(false);
-  const [masterUploadFile, setMasterUploadFile] = useState(null);
-  const [masterUploadTarget, setMasterUploadTarget] = useState(null);
-  const masterFileInputRef = useRef(null);
-
-  const openInvoiceAttrModal = () => {
-    setInvoiceAttrDraft({ name: '', apiKey: '', type: 'string', masterSource: '' });
-    setShowInvoiceAttrModal(true);
-  };
-  const openMasterUploadModal = (attr) => { setMasterUploadFile(null); setMasterUploadTarget(attr); setShowMasterUploadModal(true); };
-  const handleMasterUploadFile = (e) => {
-    const file = e.target.files[0];
-    if (file) setMasterUploadFile(file);
-  };
-  const submitMasterUpload = () => {
-    setShowMasterUploadModal(false);
-    showToast(`${masterUploadTarget?.masterSource || 'Master data'} uploaded — processing records`);
+  const downloadCatalogueSample = () => {
+    const rows = [
+      'reference_id,product_code,product_name,status',
+      '1,PRD-1001,Sample Product A,N',
+      '=MAX($A$2:A2)+1,PRD-1002,Sample Product B,N',
+      '=MAX($A$2:A3)+1,PRD-1003,Sample Product C,N',
+      '=MAX($A$2:A4)+1,PRD-1004,Sample Product D,N',
+      '=MAX($A$2:A5)+1,PRD-1005,Sample Product E,N',
+    ];
+    const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'catalogue_sample.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Sample file downloaded');
   };
 
   const toggleAccordion = (key) => setOpenAccordions(prev => ({ ...prev, [key]: !prev[key] }));
-
-  const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-
-  const openMatchKeyModal = () => {
-    setMatchKeyDraft({ name: '', apiKey: '' });
-    setShowMatchKeyModal(true);
-  };
-
-  const saveMatchKey = () => {
-    const name = matchKeyDraft.name.trim();
-    const apiKey = matchKeyDraft.apiKey.trim() || slugify(name);
-    if (!name) { showToast('Match key name is required'); return; }
-    if (matchKeys.some(k => k.name.toLowerCase() === name.toLowerCase())) {
-      showToast('A match key with this name already exists');
-      return;
-    }
-    if (matchKeys.some(k => k.apiKey === apiKey)) {
-      showToast('API & File Key must be unique');
-      return;
-    }
-    addMatchKey({ name, apiKey });
-    showToast(`"${name}" match key created`);
-    setShowMatchKeyModal(false);
-  };
-
-  const saveInvoiceAttribute = () => {
-    const name = invoiceAttrDraft.name.trim();
-    const apiKey = invoiceAttrDraft.apiKey.trim() || slugify(name);
-    if (!name) { showToast('Attribute name is required'); return; }
-    if (invoiceAttributes.some(a => a.name.toLowerCase() === name.toLowerCase())) {
-      showToast('An attribute with this name already exists');
-      return;
-    }
-    if (invoiceAttributes.some(a => a.apiKey === apiKey)) {
-      showToast('API & File Key must be unique');
-      return;
-    }
-    const masterSource = invoiceAttrDraft.masterSource.trim() || `${name} Master`;
-    addInvoiceAttribute({ name, apiKey, type: invoiceAttrDraft.type, masterSource });
-    showToast(`"${name}" invoice attribute created`);
-    setShowInvoiceAttrModal(false);
-  };
 
   const ruleHasEmptyCondition = (rule) =>
     rule.groups.some(g => g.some(c => !noValueOps.includes(c.op) && !c.val));
@@ -414,7 +332,7 @@ export default function AlertRules() {
             )}
           </section>
 
-          {/* SKU Master */}
+          {/* Catalogue */}
           <section className="flex flex-col gap-3">
             <div className="border border-border rounded-lg overflow-hidden">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee]">
@@ -428,16 +346,24 @@ export default function AlertRules() {
               </div>
               {openAccordions.global && (
                 <>
-                <div className="flex justify-end px-4 py-3 border-b border-border bg-surface">
+                <div className="flex justify-end gap-2 px-4 py-3 border-b border-border bg-surface">
+                  <button
+                    onClick={() => { setCatalogueSearch(''); setShowViewCatalogueModal(true); }}
+                    disabled={catalogueRecords.length === 0}
+                    title={catalogueRecords.length === 0 ? 'No catalogue records uploaded yet' : undefined}
+                    className="flex items-center gap-1.5 text-primary border border-primary/30 px-4 py-2 rounded text-sm font-medium hover:bg-primary-light cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  >
+                    View Catalogue
+                  </button>
                   <button onClick={openUploadModal} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
-                    <Upload size={14} /> Upload SKU Master
+                    <Upload size={14} /> Upload Catalogue
                   </button>
                 </div>
-                <table className="w-full border-t border-border">
+                <table className="w-full table-fixed border-t border-border">
                   <thead>
                     <tr>
-                      {['Attribute name', 'Data type', 'API & File Key', 'Field is unique', 'Field is mandatory', 'Actions'].map(h => (
-                        <th key={h} className="text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap">{h}</th>
+                      {[['Attribute name', 'w-[25%]'], ['Data type', 'w-[15%]'], ['API & File Key', 'w-[25%]'], ['Field is unique', 'w-[17.5%]'], ['Field is mandatory', 'w-[17.5%]']].map(([h, w]) => (
+                        <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap ${w}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -451,39 +377,11 @@ export default function AlertRules() {
                         <td className="px-4 py-3 text-sm text-text-secondary font-mono">{a.apiKey}</td>
                         <td className="px-4 py-3 text-sm text-text">{a.unique ? 'True' : 'False'}</td>
                         <td className="px-4 py-3 text-sm text-text">{a.mandatory ? 'True' : 'False'}</td>
-                        <td className="px-4 py-3">
-                          <button disabled title="Structure is system-defined" className="p-1 text-text-secondary/50 cursor-not-allowed">
-                            <MoreHorizontal size={16} />
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 </>
-              )}
-            </div>
-          </section>
-
-          {/* Line Item Lookup Attributes (default/empty state) */}
-          <section className="flex flex-col gap-3">
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
-                <button onClick={() => toggleAccordion('lorem')} className="flex-1 flex items-center justify-between cursor-pointer">
-                  <span className="text-sm font-semibold text-text">Line Item Lookup Attributes</span>
-                  {openAccordions.lorem ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
-                </button>
-              </div>
-              {openAccordions.lorem && (
-                <div className="flex flex-col items-center text-center py-10 px-4">
-                  <div className="w-11 h-11 rounded-full bg-[#FFF1E7] flex items-center justify-center mb-3">
-                    <ClipboardCheck size={20} className="text-[#EA6C1E]" />
-                  </div>
-                  <p className="text-sm text-text mb-4">Program-specific lookup used to resolve OCR scanned Product Names to a particular Product Code</p>
-                  <button className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
-                    + Add New Line Item Lookup Attribute
-                  </button>
-                </div>
               )}
             </div>
           </section>
@@ -495,34 +393,34 @@ export default function AlertRules() {
                 <button onClick={() => toggleAccordion('local')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
                     <span className="text-sm font-semibold text-text block">Line Item Lookup Attributes</span>
-                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Program-specific lookup used to resolve OCR scanned Product Names to a particular Product Code</span>
+                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Resolves OCR-scanned line item product names to the correct product code.</span>
                   </span>
                   {openAccordions.local ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
                 </button>
               </div>
               {openAccordions.local && (
-                matchKeys.length === 0 ? (
+                (isDefaultMode || matchKeys.length === 0) ? (
                   <div className="flex flex-col items-center text-center py-10 px-4">
                     <div className="w-11 h-11 rounded-full bg-[#FFF1E7] flex items-center justify-center mb-3">
                       <ClipboardCheck size={20} className="text-[#EA6C1E]" />
                     </div>
-                    <p className="text-sm text-text mb-4">No match key configured — matching relies on Product Code / Product Name only.</p>
-                    <button onClick={openMatchKeyModal} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
-                      + Add Match Key
+                    <p className="text-sm text-text mb-4">No Lookup Attribute configured — matching relies on Product Code / Product Name only.</p>
+                    <button onClick={() => navigate('/partner-promotions/invoice-management/settings/lookup-attributes/create')} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                      + Add New Lookup Attribute
                     </button>
                   </div>
                 ) : (
                   <>
                   <div className="flex justify-end px-4 py-3 border-b border-border bg-surface">
-                    <button onClick={openMatchKeyModal} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
-                      + Add Match Key
+                    <button onClick={() => navigate('/partner-promotions/invoice-management/settings/lookup-attributes/create')} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                      + Add Lookup Attribute
                     </button>
                   </div>
-                  <table className="w-full">
+                  <table className="w-full table-fixed">
                     <thead>
                       <tr>
-                        {['Match key name', 'Data type', 'API & File Key', 'Mapped records', 'Actions'].map(h => (
-                          <th key={h} className="text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap">{h}</th>
+                        {[['Attribute name', 'w-[25%]'], ['Data type', 'w-[15%]'], ['API & File Key', 'w-[25%]'], ['Mapped records', 'w-[17.5%]'], ['Actions', 'w-[17.5%]']].map(([h, w]) => (
+                          <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap ${w}`}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -542,16 +440,10 @@ export default function AlertRules() {
                             {openKebab === a.id && (
                               <div className="absolute right-4 top-9 z-10 bg-surface border border-border rounded-lg shadow-lg w-44 py-1" onMouseLeave={() => setOpenKebab(null)}>
                                 <button
-                                  onClick={() => { openManageMatchKey(a.id); setOpenKebab(null); }}
+                                  onClick={() => { navigate(`/partner-promotions/invoice-management/settings/lookup-attributes/${a.id}`); setOpenKebab(null); }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg cursor-pointer"
                                 >
                                   <Pencil size={14} /> Manage Mappings
-                                </button>
-                                <button
-                                  onClick={() => { deleteMatchKey(a.id); showToast(`"${a.name}" match key deleted`); setOpenKebab(null); }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-bg cursor-pointer"
-                                >
-                                  <Trash2 size={14} /> Delete
                                 </button>
                               </div>
                             )}
@@ -573,34 +465,34 @@ export default function AlertRules() {
                 <button onClick={() => toggleAccordion('invoice')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
                     <span className="text-sm font-semibold text-text block">Invoice Detail Validation Attributes</span>
-                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Header-level fields, each validated against its own master data — e.g. scanned stockist name against a verified stockist list.</span>
+                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Validates OCR-scanned invoice fields against verified master data (e.g. scanned stockist name against a verified stockist list).</span>
                   </span>
                   {openAccordions.invoice ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
                 </button>
               </div>
               {openAccordions.invoice && (
-                invoiceAttributes.length === 0 ? (
+                (isDefaultMode || invoiceAttributes.length === 0) ? (
                   <div className="flex flex-col items-center text-center py-10 px-4">
                     <div className="w-11 h-11 rounded-full bg-[#FFF1E7] flex items-center justify-center mb-3">
                       <ClipboardCheck size={20} className="text-[#EA6C1E]" />
                     </div>
                     <p className="text-sm text-text mb-4">Add invoice-level fields validated against master data.</p>
-                    <button onClick={openInvoiceAttrModal} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                    <button onClick={() => navigate('/partner-promotions/invoice-management/settings/invoice-attributes/create')} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
                       + Add New Invoice Attribute
                     </button>
                   </div>
                 ) : (
                   <>
                   <div className="flex justify-end px-4 py-3 border-b border-border bg-surface">
-                    <button onClick={openInvoiceAttrModal} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                    <button onClick={() => navigate('/partner-promotions/invoice-management/settings/invoice-attributes/create')} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
                       + Add New Invoice Attribute
                     </button>
                   </div>
-                  <table className="w-full">
+                  <table className="w-full table-fixed">
                     <thead>
                       <tr>
-                        {['Attribute name', 'Data type', 'API & File Key', 'Validated against', 'Actions'].map(h => (
-                          <th key={h} className="text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap">{h}</th>
+                        {[['Attribute name', 'w-[25%]'], ['Data type', 'w-[15%]'], ['API & File Key', 'w-[25%]'], ['Validated Against', 'w-[17.5%]'], ['Actions', 'w-[17.5%]']].map(([h, w]) => (
+                          <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap ${w}`}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -620,16 +512,10 @@ export default function AlertRules() {
                             {openKebab === a.id && (
                               <div className="absolute right-4 top-9 z-10 bg-surface border border-border rounded-lg shadow-lg w-44 py-1" onMouseLeave={() => setOpenKebab(null)}>
                                 <button
-                                  onClick={() => { openMasterUploadModal(a); setOpenKebab(null); }}
+                                  onClick={() => { navigate(`/partner-promotions/invoice-management/settings/invoice-attributes/${a.id}`); setOpenKebab(null); }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg cursor-pointer"
                                 >
-                                  <Upload size={14} /> Upload Master Data
-                                </button>
-                                <button
-                                  onClick={() => { deleteInvoiceAttribute(a.id); showToast(`"${a.name}" attribute deleted`); setOpenKebab(null); }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-bg cursor-pointer"
-                                >
-                                  <Trash2 size={14} /> Delete
+                                  <Pencil size={14} /> Manage Mappings
                                 </button>
                               </div>
                             )}
@@ -646,232 +532,6 @@ export default function AlertRules() {
 
         </div>
       </div>
-
-      {showMatchKeyModal && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowMatchKeyModal(false)}>
-          <div className="bg-surface rounded-lg shadow-xl w-[440px]" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <span className="text-base font-semibold text-text">Add Match Key</span>
-              <button onClick={() => setShowMatchKeyModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
-            </div>
-            <div className="p-5 flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-semibold text-text-secondary block mb-1.5">Match Key Name</label>
-                <input
-                  type="text"
-                  value={matchKeyDraft.name}
-                  onChange={e => setMatchKeyDraft(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g. Batch ID"
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-text-secondary block mb-1.5">API & File Key</label>
-                <input
-                  type="text"
-                  value={matchKeyDraft.apiKey}
-                  onChange={e => setMatchKeyDraft(prev => ({ ...prev, apiKey: e.target.value }))}
-                  placeholder={matchKeyDraft.name ? slugify(matchKeyDraft.name) : 'auto-generated from name'}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary font-mono"
-                />
-              </div>
-              <p className="text-xs text-text-secondary">Table structure is fixed — {matchKeyDraft.name || 'match key'} value + SKU / product code. The uploaded CSV populates it directly.</p>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-border">
-              <button onClick={() => setShowMatchKeyModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">
-                Cancel
-              </button>
-              <button onClick={saveMatchKey} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
-                Save Match Key
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showManageMatchKey && manageMatchKeyTarget && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowManageMatchKey(false)}>
-          <div className="bg-surface rounded-lg shadow-xl w-[760px] max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <div>
-                <div className="text-base font-semibold text-text">Manage {manageMatchKeyTarget.name}</div>
-                <p className="text-xs text-text-secondary mt-1">Search, add, edit, or bulk-upload {manageMatchKeyTarget.name} → SKU code mappings.</p>
-              </div>
-              <button onClick={() => setShowManageMatchKey(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
-            </div>
-            <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
-              <input
-                type="text"
-                value={matchKeySearch}
-                onChange={e => { setMatchKeySearch(e.target.value); setMatchKeyPage(1); }}
-                placeholder={`Search by ${manageMatchKeyTarget.name} or SKU code`}
-                className="flex-1 px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
-              />
-              <button
-                onClick={() => openMasterUploadModal({ name: manageMatchKeyTarget.name, masterSource: `${manageMatchKeyTarget.name} Mapping` })}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary-light cursor-pointer whitespace-nowrap"
-              >
-                <Upload size={14} /> Upload CSV
-              </button>
-              <button
-                onClick={() => openMappingModal()}
-                className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-[#354499] cursor-pointer whitespace-nowrap"
-              >
-                + Add Mapping
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-text-secondary text-xs">
-                    <th className="py-2 pr-3 font-medium">{manageMatchKeyTarget.name}</th>
-                    <th className="py-2 pr-3 font-medium">SKU / Product Code</th>
-                    <th className="py-2 pr-3 font-medium">Active</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedMappingRecords.length === 0 ? (
-                    <tr><td colSpan={3} className="py-8 text-center text-text-secondary text-sm">No mappings found.</td></tr>
-                  ) : pagedMappingRecords.map(r => (
-                    <tr key={r.id} className="border-t border-border">
-                      <td className="py-2.5 pr-3 font-mono text-xs text-text">{r.keyValue}</td>
-                      <td className="py-2.5 pr-3 font-mono text-xs text-text">{r.skuCode}</td>
-                      <td className="py-2.5 pr-3">
-                        <Toggle checked={r.active} onChange={() => toggleMatchKeyRecord(manageMatchKeyId, r.id)} title="Once uploaded, records can only be disabled — not edited" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex items-center justify-between px-5 py-3 border-t border-border text-xs text-text-secondary">
-              <span>
-                {filteredMappingRecords.length === 0
-                  ? '0 records'
-                  : `${(matchKeyPage - 1) * MATCH_KEY_PAGE_SIZE + 1}-${Math.min(matchKeyPage * MATCH_KEY_PAGE_SIZE, filteredMappingRecords.length)} of ${filteredMappingRecords.length}`}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setMatchKeyPage(p => Math.max(1, p - 1))}
-                  disabled={matchKeyPage === 1}
-                  className="px-2 py-1 rounded border border-border disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:bg-bg"
-                >
-                  Prev
-                </button>
-                <button
-                  onClick={() => setMatchKeyPage(p => (p * MATCH_KEY_PAGE_SIZE < filteredMappingRecords.length ? p + 1 : p))}
-                  disabled={matchKeyPage * MATCH_KEY_PAGE_SIZE >= filteredMappingRecords.length}
-                  className="px-2 py-1 rounded border border-border disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:bg-bg"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMappingModal && (
-        <div className="fixed inset-0 bg-black/40 z-[110] flex items-center justify-center" onClick={() => setShowMappingModal(false)}>
-          <div className="bg-surface rounded-lg shadow-xl w-[400px]" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <span className="text-base font-semibold text-text">{mappingDraft.id ? 'Edit Mapping' : 'Add Mapping'}</span>
-              <button onClick={() => setShowMappingModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
-            </div>
-            <div className="p-5 flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-semibold text-text-secondary block mb-1.5">{manageMatchKeyTarget?.name || 'Match Key'} Value</label>
-                <input
-                  type="text"
-                  value={mappingDraft.keyValue}
-                  onChange={e => setMappingDraft(prev => ({ ...prev, keyValue: e.target.value }))}
-                  placeholder="e.g. 046L23PK"
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-text-secondary block mb-1.5">SKU / Product Code</label>
-                <input
-                  type="text"
-                  value={mappingDraft.skuCode}
-                  onChange={e => setMappingDraft(prev => ({ ...prev, skuCode: e.target.value }))}
-                  placeholder="e.g. 502896"
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary font-mono"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-border">
-              <button onClick={() => setShowMappingModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">
-                Cancel
-              </button>
-              <button onClick={saveMapping} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
-                Save Mapping
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showInvoiceAttrModal && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowInvoiceAttrModal(false)}>
-          <div className="bg-surface rounded-lg shadow-xl w-[440px]" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <span className="text-base font-semibold text-text">Add Invoice Attribute</span>
-              <button onClick={() => setShowInvoiceAttrModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
-            </div>
-            <div className="p-5 flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-semibold text-text-secondary block mb-1.5">Attribute Name</label>
-                <input
-                  type="text"
-                  value={invoiceAttrDraft.name}
-                  onChange={e => setInvoiceAttrDraft(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g. Stockist Name"
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-text-secondary block mb-1.5">Data Type</label>
-                <select
-                  value={invoiceAttrDraft.type}
-                  onChange={e => setInvoiceAttrDraft(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary bg-surface"
-                >
-                  {attributeTypes.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-text-secondary block mb-1.5">API & File Key</label>
-                <input
-                  type="text"
-                  value={invoiceAttrDraft.apiKey}
-                  onChange={e => setInvoiceAttrDraft(prev => ({ ...prev, apiKey: e.target.value }))}
-                  placeholder={invoiceAttrDraft.name ? slugify(invoiceAttrDraft.name) : 'auto-generated from name'}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-text-secondary block mb-1.5">Validated Against (Master Data)</label>
-                <input
-                  type="text"
-                  value={invoiceAttrDraft.masterSource}
-                  onChange={e => setInvoiceAttrDraft(prev => ({ ...prev, masterSource: e.target.value }))}
-                  placeholder="e.g. Verified Stockist Master"
-                  className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-border">
-              <button onClick={() => setShowInvoiceAttrModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">
-                Cancel
-              </button>
-              <button onClick={saveInvoiceAttribute} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
-                Save Attribute
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {pendingConfirm && (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={cancelPending}>
@@ -906,18 +566,64 @@ export default function AlertRules() {
         </div>
       )}
 
+      {showViewCatalogueModal && (
+        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowViewCatalogueModal(false)}>
+          <div className="bg-surface rounded-lg shadow-xl w-[560px] max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div className="text-base font-semibold text-text">View Catalogue</div>
+              <button onClick={() => setShowViewCatalogueModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
+            </div>
+            <div className="px-5 py-3 border-b border-border">
+              <input
+                type="text"
+                value={catalogueSearch}
+                onChange={e => setCatalogueSearch(e.target.value)}
+                placeholder="Search by Product Code or Product Name"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto px-5">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-text-secondary text-xs">
+                    <th className="py-2 pr-3 font-medium">Reference ID</th>
+                    <th className="py-2 pr-3 font-medium">Product Code</th>
+                    <th className="py-2 pr-3 font-medium">Product Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCatalogueRecords.length === 0 ? (
+                    <tr><td colSpan={3} className="py-8 text-center text-text-secondary text-sm">No records found.</td></tr>
+                  ) : filteredCatalogueRecords.map(r => (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="py-2.5 pr-3 font-mono text-xs text-text-secondary">{r.id}</td>
+                      <td className="py-2.5 pr-3 font-mono text-xs text-text">{r.code}</td>
+                      <td className="py-2.5 pr-3 text-xs text-text">{r.name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3 border-t border-border text-xs text-text-secondary">
+              <span>{filteredCatalogueRecords.length} of {catalogueRecords.length} records</span>
+              <button onClick={() => setShowViewCatalogueModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowUploadModal(false)}>
           <div className="bg-surface rounded-lg shadow-xl w-[480px]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
-                <div className="text-base font-semibold text-text">Upload SKU Master</div>
-                <p className="text-xs text-text-secondary mt-1">Upload file to add or update Product Code and Product Name in bulk. Populates the SKU Master table directly.</p>
+                <div className="text-base font-semibold text-text">Upload Catalogue</div>
+                <p className="text-xs text-text-secondary mt-1">Upload a CSV file to import product catalogue data. Reference ID is mandatory — generate a new one for new products (N), reuse the existing one for updates (U).</p>
               </div>
               <button onClick={() => setShowUploadModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
             </div>
             <div className="p-5">
-              <input type="file" ref={fileInputRef} accept=".csv,.xlsx" className="hidden" onChange={handleUploadFile} />
+              <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleUploadFile} />
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-border rounded-lg py-9 px-4 text-center cursor-pointer hover:border-primary hover:bg-bg/40 transition-colors"
@@ -926,52 +632,16 @@ export default function AlertRules() {
                   <Upload size={16} />
                 </div>
                 <div className="text-sm font-semibold text-text mb-1">{uploadFile ? uploadFile.name : 'Upload File'}</div>
-                <div className="text-xs text-text-secondary">{uploadFile ? 'File selected — click to replace' : 'Upto 50,000 records & .xlsx, .csv file'}</div>
+                <div className="text-xs text-text-secondary">{uploadFile ? 'File selected — click to replace' : 'Upto 25,000 records & .csv file'}</div>
               </div>
             </div>
             <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-              <button onClick={() => showToast('Sample file downloaded')} className="text-sm font-medium text-primary hover:underline cursor-pointer flex items-center gap-1.5">
+              <button onClick={downloadCatalogueSample} className="text-sm font-medium text-primary hover:underline cursor-pointer flex items-center gap-1.5">
                 <Download size={14} /> Download Sample File
               </button>
               <div className="flex gap-2">
                 <button onClick={() => setShowUploadModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">Cancel</button>
                 <button onClick={submitUpload} disabled={!uploadFile} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMasterUploadModal && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowMasterUploadModal(false)}>
-          <div className="bg-surface rounded-lg shadow-xl w-[480px]" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <div>
-                <div className="text-base font-semibold text-text">Upload {masterUploadTarget?.masterSource || 'Master Data'}</div>
-                <p className="text-xs text-text-secondary mt-1">Upload verified {masterUploadTarget?.name} records to validate scanned invoice details against.</p>
-              </div>
-              <button onClick={() => setShowMasterUploadModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
-            </div>
-            <div className="p-5">
-              <input type="file" ref={masterFileInputRef} accept=".csv,.xlsx" className="hidden" onChange={handleMasterUploadFile} />
-              <div
-                onClick={() => masterFileInputRef.current?.click()}
-                className="border-2 border-dashed border-border rounded-lg py-9 px-4 text-center cursor-pointer hover:border-primary hover:bg-bg/40 transition-colors"
-              >
-                <div className="w-9 h-9 rounded-lg border border-primary/30 text-primary flex items-center justify-center mx-auto mb-3">
-                  <Upload size={16} />
-                </div>
-                <div className="text-sm font-semibold text-text mb-1">{masterUploadFile ? masterUploadFile.name : 'Upload File'}</div>
-                <div className="text-xs text-text-secondary">{masterUploadFile ? 'File selected — click to replace' : 'Upto 50,000 records & .xlsx, .csv file'}</div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-              <button onClick={() => showToast('Sample file downloaded')} className="text-sm font-medium text-primary hover:underline cursor-pointer flex items-center gap-1.5">
-                <Download size={14} /> Download Sample File
-              </button>
-              <div className="flex gap-2">
-                <button onClick={() => setShowMasterUploadModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">Cancel</button>
-                <button onClick={submitMasterUpload} disabled={!masterUploadFile} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
               </div>
             </div>
           </div>

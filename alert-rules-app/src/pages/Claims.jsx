@@ -11,8 +11,9 @@ import ActionModal from '../components/ActionModal';
 
 export default function Claims() {
   const navigate = useNavigate();
-  const { rules, invoices, showToast, devNotes } = useStore();
+  const { rules, invoices, showToast, devNotes, updateInvoiceStatus } = useStore();
   const [tab, setTab] = useState('pending');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [actionModal, setActionModal] = useState(null);
 
@@ -22,7 +23,8 @@ export default function Claims() {
   const activeAlerts = (inv) => inv.alerts.filter(a => a.system || activeRuleIds.has(a.ruleId));
 
   const pending = invoices.filter(i => i.status === 'pending');
-  const list = tab === 'pending' ? pending : invoices;
+  const byTab = tab === 'pending' ? pending : invoices;
+  const list = typeFilter === 'all' ? byTab : byTab.filter(i => i.type === typeFilter);
 
 
   return (
@@ -82,10 +84,21 @@ export default function Claims() {
           ))}
         </div>
 
-        <div className="relative mx-4 my-4">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#868CCC]" />
-          <input type="text" placeholder="Search by Partner Name or Invoice Number" className="w-full pl-10 pr-10 py-2.5 border border-border rounded-lg text-[13px] text-text outline-none focus:border-primary placeholder:text-[#BDC5DA]" />
-          <X size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary cursor-pointer" />
+        <div className="flex items-center gap-3 mx-4 my-4">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#868CCC]" />
+            <input type="text" placeholder="Search by Partner Name or Invoice Number" className="w-full pl-10 pr-10 py-2.5 border border-border rounded-lg text-[13px] text-text outline-none focus:border-primary placeholder:text-[#BDC5DA]" />
+            <X size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary cursor-pointer" />
+          </div>
+          <select
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value)}
+            className="border border-border rounded-lg px-3 py-2.5 text-[13px] text-text outline-none focus:border-primary bg-surface"
+          >
+            <option value="all">All Types</option>
+            <option value="Claims">Claims</option>
+            <option value="Warranty">Warranty</option>
+          </select>
         </div>
 
         <table className="w-full border-collapse">
@@ -158,6 +171,10 @@ export default function Claims() {
                   <td className="px-4 py-3">
                     <Popover items={[
                       { label: 'View', onClick: () => navigate(`/partner-promotions/invoice-management/${origIdx}`) },
+                      ...(inv.status === 'pending' ? [
+                        { label: 'Approve', success: true, onClick: () => setActionModal({ kind: 'approve', inv, origIdx }) },
+                        { label: 'Reject', danger: true, onClick: () => setActionModal({ kind: 'reject', inv, origIdx }) },
+                      ] : []),
                     ]} />
                   </td>
                 </tr>
@@ -183,11 +200,12 @@ export default function Claims() {
 
       {actionModal && (
         <ActionModal
-          kind="approve"
+          kind={actionModal.kind}
           invoiceNum={actionModal.inv.num}
           onClose={() => setActionModal(null)}
           onConfirm={() => {
-            showToast(`${actionModal.inv.num} approved`);
+            updateInvoiceStatus(actionModal.origIdx, actionModal.kind === 'approve' ? 'approved' : 'rejected');
+            showToast(`${actionModal.inv.num} ${actionModal.kind === 'approve' ? 'approved' : 'rejected'}`);
             setActionModal(null);
           }}
         />

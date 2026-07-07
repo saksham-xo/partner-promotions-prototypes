@@ -8,11 +8,16 @@ const initialRules = [
 
 const initialInvoices = [
   // Custom alert — High value invoice (RULE-001). Red indicator on list.
-  { claimId: 1257, type: 'Claims', num: 'INV-2026-05100', partner: 'SADGURU AGENCY', member: 'M-44021', amount: 78500, date: '14 Apr, 2026 09:22:10', invDate: '12 Apr, 2026', status: 'pending', ocrConfidence: 95, supplier: 'SADGURU AGENCY', customer: 'HEALTH MART CHEMIST', authDist: 'SADGURU AGENCY', partnerId: '5567890', totalClaims: 8, lastClaim: '14 Apr, 2026', lineItems: [{ code: 'PHR-101', name: 'Insulin Pen 3ml', qty: 50, price: 1200, amount: 60000 }, { code: 'PHR-102', name: 'Glucose Monitor Kit', qty: 25, price: 740, amount: 18500 }], alerts: [{ ruleId: 'RULE-001', ruleName: 'High value invoice', msg: 'Invoice value \u20b978,500 exceeds threshold of \u20b950,000' }], pastInvoices: [] },
+  // Scan & match example \u2014 covers all 3 confidence tiers: batch-matched (high), fuzzy-fallback (medium), unresolved (low).
+  { claimId: 1257, type: 'Claims', num: 'INV-2026-05100', partner: 'SADGURU AGENCY', member: 'M-44021', amount: 78500, date: '14 Apr, 2026 09:22:10', invDate: '12 Apr, 2026', status: 'pending', ocrConfidence: 95, supplier: 'SADGURU AGENCY', customer: 'HEALTH MART CHEMIST', authDist: 'SADGURU AGENCY', partnerId: '5567890', totalClaims: 8, lastClaim: '14 Apr, 2026', lineItems: [
+    { name: 'Insulin Pen 3ml', qty: 50, price: 1200, amount: 60000, batchId: '3311K25CP' },
+    { name: 'GLUCOMTR KIT', qty: 25, price: 740, amount: 18500, fuzzyScore: 0.82, fuzzyCode: '514812', fuzzyName: 'Glucose Monitor Kit' },
+    { name: 'UNIDENTIFIED SYRINGE PK', qty: 10, price: 100, amount: 1000, fuzzyScore: 0.18 },
+  ], alerts: [{ ruleId: 'RULE-001', ruleName: 'High value invoice', msg: 'Invoice value \u20b978,500 exceeds threshold of \u20b950,000' }], pastInvoices: [] },
   // Built-in alert — Line item sum mismatch. Amber banner in detail.
   { claimId: 1209, type: 'Claims', num: 'FE-25-310468', partner: 'FOCUS MEDISALES', member: 'M-70184', amount: 5200, date: '13 Apr, 2026 13:47:59', invDate: '08 Apr, 2026', status: 'pending', ocrConfidence: 72, supplier: 'FOCUS MEDISALES PVT LTD', customer: 'Priya Retail', authDist: 'FOCUS MEDISALES PVT LTD', partnerId: '9012345', totalClaims: 5, lastClaim: '13 Apr, 2026', lineItems: [{ code: 'MED-2201', name: 'TAIXIN FORCE DRY SYRUP', qty: 10, price: 285, amount: 2850 }, { code: 'MED-2205', name: 'MAGNALOR TONIC CAPS', qty: 15, price: 135.67, amount: 2035 }], alerts: [{ system: true, ruleName: 'Line item sum mismatch', msg: 'Line items sum to \u20b94,885 but invoice total is \u20b95,200 (difference: \u20b9315)' }], pastInvoices: [] },
   // Built-in alert — Duplicate invoice number. Shares INV-2026-05201 with claim 1180.
-  { claimId: 1195, type: 'Warranty', num: 'INV-2026-05201', partner: 'NEW GARODIA DISTRIBUTORS', member: 'M-55498', amount: 1387, date: '10 Apr, 2026 21:03:30', invDate: '10 Apr, 2026', status: 'pending', ocrConfidence: 91, supplier: 'NEW GARODIA DISTRIBUTORS', customer: 'dia medical', authDist: 'NEW GARODIA DISTRIBUTORS', partnerId: '1234567', totalClaims: 3, lastClaim: '10 Apr, 2026', lineItems: [{ code: 'PHR-002', name: 'Paracetamol 500mg', qty: 20, price: 69.35, amount: 1387 }], alerts: [{ system: true, ruleName: 'Duplicate invoice number', msg: 'Invoice number INV-2026-05201 has been submitted previously' }], pastInvoices: [] },
+  { claimId: 1195, type: 'Warranty', num: 'INV-2026-05201', partner: 'NEW GARODIA DISTRIBUTORS', member: 'M-55498', amount: 1387, date: '10 Apr, 2026 21:03:30', invDate: '10 Apr, 2026', status: 'pending', ocrConfidence: 91, supplier: 'NEW GARODIA DISTRIBUTORS', customer: 'dia medical', authDist: 'NEW GARODIA DISTRIBUTORS', partnerId: '1234567', totalClaims: 3, lastClaim: '10 Apr, 2026', lineItems: [{ code: 'PHR-002', name: 'Paracetamol 500mg', qty: 20, price: 69.35, amount: 1387 }], alerts: [{ system: true, ruleName: 'Duplicate invoice number', msg: 'Invoice number INV-2026-05201 has been submitted previously' }], pastInvoices: [], warranty: { qrId: 'QR-88291', durationValue: 12, durationUnit: 'Months' } },
   // Auto-approved invoice — matched AR-001 (Low Value Claims, scan quality 94%). No alerts.
   { claimId: 1190, type: 'Claims', num: '250007300387493', partner: 'SADGURU AGENCY', member: 'M-42017', amount: 2009, date: '10 Apr, 2026 10:08:45', invDate: '09 Apr, 2026', status: 'approved', ocrConfidence: 94, autoApprovedByRuleId: 'AR-001', supplier: 'SADGURU AGENCY', customer: 'HEALTH MART CHEMIST', authDist: 'SADGURU AGENCY', partnerId: '5567890', totalClaims: 8, lastClaim: '10 Apr, 2026', lineItems: [{ code: 'PHR-003', name: 'Antibiotic Tab', qty: 4, price: 502.25, amount: 2009 }], alerts: [], pastInvoices: [] },
   // Custom alert — High value invoice (RULE-001). Red indicator on list.
@@ -34,8 +39,23 @@ export function StoreProvider({ children }) {
 
   // SKU Master — fixed catalogue schema, replaces the Plum dependency. One row per SKU, populated directly by CSV upload.
   const globalAttributes = [
+    { id: 'GATTR-000', name: 'Reference ID', type: 'string', apiKey: 'reference_id', unique: true, mandatory: true },
     { id: 'GATTR-001', name: 'Product Code', type: 'string', apiKey: 'product_code', unique: true, mandatory: true },
     { id: 'GATTR-002', name: 'Product Name', type: 'string', apiKey: 'product_name', unique: false, mandatory: true },
+  ];
+
+  // id is the stable relation reference for a catalogue row — assigned once at creation and
+  // never reassigned, so a later product_code change (via status=U upload) can still be traced
+  // back to the same underlying product.
+  const catalogueRecords = [
+    { id: '1', code: '502896', name: 'Injection Vial 10ml' },
+    { id: '2', code: '514812', name: 'Glucose Monitor Kit' },
+    { id: '3', code: '514355', name: 'Insulin Pen 3ml' },
+    { id: '4', code: '503541', name: 'Antibiotic Tab' },
+    { id: '5', code: '514341', name: 'Paracetamol 500mg' },
+    { id: '6', code: '514320', name: 'Iron Supplement Tab' },
+    { id: '7', code: '512067', name: 'Syringe Pack 5ml' },
+    { id: '8', code: '509214', name: 'TAIXIN FORCE DRY SYRUP' },
   ];
 
   // Additional Match Key — optional, client-specific (e.g. Batch ID for Lupin, not needed for SBD). Fixed 2-column
@@ -54,10 +74,9 @@ export function StoreProvider({ children }) {
     },
   ]);
   const addMatchKey = (key) => {
-    setMatchKeys(prev => [...prev, { ...key, id: 'MKEY-' + String(prev.length + 1).padStart(3, '0'), type: 'string', records: [] }]);
-  };
-  const deleteMatchKey = (id) => {
-    setMatchKeys(prev => prev.filter(k => k.id !== id));
+    const id = 'MKEY-' + String(matchKeys.length + 1).padStart(3, '0');
+    setMatchKeys(prev => [...prev, { type: 'string', ...key, id, records: [] }]);
+    return id;
   };
   const addMatchKeyRecord = (matchKeyId, record) => {
     setMatchKeys(prev => prev.map(k => k.id !== matchKeyId ? k : {
@@ -79,15 +98,32 @@ export function StoreProvider({ children }) {
   };
 
   const [invoiceAttributes, setInvoiceAttributes] = useState([
-    { id: 'IATTR-001', name: 'Stockist Name', type: 'string', apiKey: 'stockist_name', masterSource: 'Verified Stockist Master', recordCount: 3 },
+    {
+      id: 'IATTR-001', name: 'Stockist Name', type: 'string', apiKey: 'stockist_name', masterSource: 'Customer',
+      records: [
+        { id: 'IAREC-001', keyValue: 'SADGURU AGENCY', active: true },
+        { id: 'IAREC-002', keyValue: 'FOCUS MEDISALES', active: true },
+        { id: 'IAREC-003', keyValue: 'NEW GARODIA DISTRIBUTORS', active: true },
+      ],
+    },
   ]);
   const addInvoiceAttribute = (attr) => {
-    setInvoiceAttributes(prev => [...prev, { ...attr, id: 'IATTR-' + String(prev.length + 1).padStart(3, '0'), recordCount: 0 }]);
+    const id = 'IATTR-' + String(invoiceAttributes.length + 1).padStart(3, '0');
+    setInvoiceAttributes(prev => [...prev, { ...attr, id, records: [] }]);
+    return id;
   };
-  const deleteInvoiceAttribute = (id) => {
-    setInvoiceAttributes(prev => prev.filter(a => a.id !== id));
+  const addInvoiceAttributeRecord = (attrId, record) => {
+    setInvoiceAttributes(prev => prev.map(a => a.id !== attrId ? a : {
+      ...a,
+      records: [...a.records, { ...record, id: 'IAREC-' + String(a.records.length + 1).padStart(3, '0'), active: true }],
+    }));
   };
-
+  const toggleInvoiceAttributeRecord = (attrId, recordId) => {
+    setInvoiceAttributes(prev => prev.map(a => a.id !== attrId ? a : {
+      ...a,
+      records: a.records.map(r => r.id === recordId ? { ...r, active: !r.active } : r),
+    }));
+  };
   const [approveRules, setApproveRules] = useState([
     { id: 'AR-001', name: 'Low Value Claims', priority: 1, on: true, minScanQuality: '80', desc: 'Auto-approve claims under ₹10,000 with a readable scan.', groups: [[{ f: 'totalAmount', op: 'lte', val: '10000' }]] },
   ]);
@@ -148,8 +184,12 @@ export function StoreProvider({ children }) {
     }));
   };
 
+  const updateInvoiceStatus = (invoiceIdx, status) => {
+    setInvoices(prev => prev.map((inv, i) => i === invoiceIdx ? { ...inv, status } : inv));
+  };
+
   return (
-    <StoreContext.Provider value={{ rules, invoices, toast, showToast, toggleRule, saveRule, deleteRule, duplicateRule, archiveRule, updateAlert, devNotes, toggleDevNotes, approveRules, toggleApproveRule, saveApproveRule, reorderApproveRules, globalAttributes, matchKeys, addMatchKey, deleteMatchKey, addMatchKeyRecord, updateMatchKeyRecord, toggleMatchKeyRecord, invoiceAttributes, addInvoiceAttribute, deleteInvoiceAttribute }}>
+    <StoreContext.Provider value={{ rules, invoices, toast, showToast, toggleRule, saveRule, deleteRule, duplicateRule, archiveRule, updateAlert, updateInvoiceStatus, devNotes, toggleDevNotes, approveRules, toggleApproveRule, saveApproveRule, reorderApproveRules, globalAttributes, catalogueRecords, matchKeys, addMatchKey, addMatchKeyRecord, updateMatchKeyRecord, toggleMatchKeyRecord, invoiceAttributes, addInvoiceAttribute, addInvoiceAttributeRecord, toggleInvoiceAttributeRecord }}>
       {children}
     </StoreContext.Provider>
   );

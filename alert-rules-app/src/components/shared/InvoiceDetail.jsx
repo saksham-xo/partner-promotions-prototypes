@@ -72,8 +72,63 @@ function inr(n) {
   return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const TIER_STYLE = {
+  high: { bg: 'bg-[rgba(76,175,80,0.13)]', text: 'text-success', label: 'MATCH' },
+  medium: { bg: 'bg-pending-bg', text: 'text-[#B8860B]', label: 'NEEDS REVIEW' },
+  low: { bg: 'bg-[rgba(244,67,54,0.13)]', text: 'text-block', label: 'NO MATCH' },
+};
+
+function ConfidencePill({ tier }) {
+  const s = TIER_STYLE[tier];
+  return (
+    <span className={`inline-block px-2 py-1 rounded text-xs font-semibold text-center whitespace-nowrap ${s.bg} ${s.text}`}>
+      {s.label}
+    </span>
+  );
+}
+
+// Scan & match flow: (1) Batch ID scanned from OCR is looked up against the Batch ID
+// master — an exact hit resolves the SKU directly ("MATCH"). (2) No batch match (stale
+// master, bad OCR read, or a non-Lupin line item) falls back to product-name fuzzy
+// matching — while a match key master exists, this fallback is surfaced as "NEEDS REVIEW"
+// (score > 0.3) since it isn't the trusted Batch ID source; the expectation is these get
+// resolved manually (mapped/corrected or dropped as non-Lupin) rather than left standing.
+// (3) No batch match and fuzzy score ≤ 0.3 (or no match key master configured at all) is
+// an unresolved line item — "NO MATCH".
+function resolveLineItem(li, inv, matchKeys, catalogueRecords) {
+  const batchMaster = matchKeys.find(k => k.apiKey === 'batch_id');
+  const batchRecord = li.batchId && batchMaster?.records.find(r => r.keyValue === li.batchId && r.active);
+  if (batchRecord) {
+    const catalogItem = catalogueRecords.find(c => c.code === batchRecord.skuCode);
+    return { tier: 'high', code: batchRecord.skuCode, name: catalogItem?.name || li.name, subtext: null };
+  }
+  if (li.fuzzyScore != null) {
+    if (li.fuzzyScore > 0.3) {
+      const subtext = li.fuzzyName && li.fuzzyName !== li.name ? li.fuzzyName : null;
+      return { tier: 'medium', code: li.fuzzyCode || '-', name: li.name, subtext };
+    }
+    return { tier: 'low', code: '-', name: li.name, subtext: null };
+  }
+  // Legacy line items with a pre-assigned code but no scan metadata — bucket off the invoice's OCR confidence.
+  const bucket = inv.ocrConfidence >= 80 ? 'high' : inv.ocrConfidence >= 60 ? 'medium' : 'low';
+  return { tier: bucket, code: li.code || '-', name: li.name, subtext: null };
+}
+
+const TIMELINE_STYLES = {
+  Submitted: { bg: '#eef2ff', color: '#5b8df6', label: 'Claim Submitted' },
+  Approved: { bg: '#e8f5e9', color: '#4caf50', label: 'Claim Approved' },
+  Rejected: { bg: '#ffebee', color: '#f44336', label: 'Claim Rejected' },
+};
+
+function buildTimeline(inv) {
+  const entries = [{ action: 'Submitted', at: inv.date, note: 'Claim submitted by Source', attachment: 'receipt_image.jpg' }];
+  if (inv.status === 'approved') entries.push({ action: 'Approved', at: inv.date, note: inv.autoApprovedByRuleId ? 'Auto-approved by rule engine' : 'Approved by reviewer' });
+  if (inv.status === 'rejected') entries.push({ action: 'Rejected', at: inv.date, note: 'Rejected by reviewer' });
+  return entries;
+}
+
 export default function InvoiceDetail({ inv, invoiceIdx, showToast }) {
-  const { rules, invoices, approveRules, devNotes } = useStore();
+  const { rules, invoices, approveRules, devNotes, matchKeys, catalogueRecords } = useStore();
   const activeRuleIds = new Set(rules.filter(r => r.on && !r.archived).map(r => r.id));
   const autoApprovalRule = inv.autoApprovedByRuleId
     ? approveRules.find(r => r.id === inv.autoApprovedByRuleId)
@@ -146,7 +201,8 @@ export default function InvoiceDetail({ inv, invoiceIdx, showToast }) {
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="bg-bg text-xs font-semibold text-[#4F516E] px-4 py-2.5 text-left border-b border-border">S.No</th>
+                <th className="bg-bg text-xs font-semibold text-[#4F516E] px-4 py-2.5 text-left border-b border-border">Line Item ID</th>
+                <th className="bg-bg text-xs font-semibold text-[#4F516E] px-4 py-2.5 text-left border-b border-border">Confidence</th>
                 <th className="bg-bg text-xs font-semibold text-[#4F516E] px-4 py-2.5 text-left border-b border-border">Product Code</th>
                 <th className="bg-bg text-xs font-semibold text-[#4F516E] px-4 py-2.5 text-left border-b border-border">Product Name</th>
                 <th className="bg-bg text-xs font-semibold text-[#4F516E] px-4 py-2.5 text-right border-b border-border">Qty</th>
@@ -156,16 +212,23 @@ export default function InvoiceDetail({ inv, invoiceIdx, showToast }) {
             </thead>
             {inv.lineItems.length > 0 && (
               <tbody>
-                {inv.lineItems.map((li, i) => (
-                  <tr key={i} className="border-b border-border hover:bg-[#F5F5F5]">
-                    <td className="px-4 py-3">{i + 1}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{li.code}</td>
-                    <td className="px-4 py-3">{li.name}</td>
-                    <td className="px-4 py-3 text-right">{li.qty}</td>
-                    <td className="px-4 py-3 text-right">{inr(li.price)}</td>
-                    <td className="px-4 py-3 text-right font-medium">{inr(li.amount)}</td>
-                  </tr>
-                ))}
+                {inv.lineItems.map((li, i) => {
+                  const r = resolveLineItem(li, inv, matchKeys, catalogueRecords);
+                  return (
+                    <tr key={i} className={`border-b border-border hover:bg-[#F5F5F5] ${r.tier === 'low' ? 'bg-[#FFF6E8]' : ''}`}>
+                      <td className="px-4 py-3 font-mono text-xs text-text-secondary">#{89221 + i}</td>
+                      <td className="px-4 py-3"><ConfidencePill tier={r.tier} /></td>
+                      <td className="px-4 py-3 font-mono text-xs">{r.code}</td>
+                      <td className="px-4 py-3">
+                        {r.name}
+                        {r.subtext && <div className="text-xs text-text-secondary italic">{r.subtext}</div>}
+                      </td>
+                      <td className="px-4 py-3 text-right">{li.qty}</td>
+                      <td className="px-4 py-3 text-right">{inr(li.price)}</td>
+                      <td className="px-4 py-3 text-right font-medium">{inr(li.amount)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             )}
           </table>
@@ -217,10 +280,37 @@ export default function InvoiceDetail({ inv, invoiceIdx, showToast }) {
           </div>
         </div>
 
+        {/* QR Details — Warranty claims only */}
+        {inv.type === 'Warranty' && inv.warranty && (
+          <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)] p-5 mb-5">
+            <h3 className="text-base font-semibold text-text mb-4">QR Details</h3>
+            <div className="grid grid-cols-3 gap-4 gap-x-6">
+              <div>
+                <div className="text-xs text-[#666] mb-1">Reference Id</div>
+                <div className="text-sm font-medium">#{inv.warranty.qrId}</div>
+              </div>
+              <div>
+                <div className="text-xs text-[#666] mb-1">Product ID</div>
+                <div className="text-sm font-medium font-mono">{inv.lineItems[0]?.code}</div>
+              </div>
+              <div>
+                <div className="text-xs text-[#666] mb-1">Product Name</div>
+                <div className="text-sm font-medium">{inv.lineItems[0]?.name}</div>
+              </div>
+              <div>
+                <div className="text-xs text-[#666] mb-1">Warranty Duration</div>
+                <div className="text-sm font-medium">{inv.warranty.durationValue} {inv.warranty.durationUnit}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Reward Points */}
         <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)] p-5">
           <h3 className="text-base font-semibold text-text mb-4">Reward Points</h3>
-          <div className="text-base font-semibold text-text">0 Points</div>
+          <div className="text-base font-semibold text-text">
+            {inv.status === 'rejected' ? 'N/A' : '0 Points'}
+          </div>
         </div>
       </div>
 
@@ -229,19 +319,29 @@ export default function InvoiceDetail({ inv, invoiceIdx, showToast }) {
         {/* Timeline */}
         <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)] p-5 mb-5">
           <h3 className="text-base font-semibold text-text mb-4">Timeline</h3>
-          <div className="flex gap-3 items-start">
-            <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center shrink-0">
-              <svg width="16" height="16" fill="none" stroke="#3F51B5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <div>
-              <div className="text-[13px] font-medium text-text">Claim submitted by Source</div>
-              <div className="text-xs text-text-secondary mt-1">{inv.date}</div>
-              <div className="flex gap-2 mt-1.5">
-                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-pending-bg text-[#B8860B]">Claim Submitted</span>
-                <a href="#" className="text-xs text-primary no-underline" onClick={(e) => { e.preventDefault(); showToast('Opening receipt'); }}>receipt_image.jpg</a>
+          {buildTimeline(inv).map((entry, i, arr) => {
+            const style = TIMELINE_STYLES[entry.action];
+            return (
+              <div key={i} className="flex gap-3 items-start relative">
+                {i < arr.length - 1 && (
+                  <div className="absolute left-4 top-8 bottom-0 w-px bg-border" style={{ height: 'calc(100% - 8px)' }} />
+                )}
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10" style={{ backgroundColor: style.bg }}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: style.color }} />
+                </div>
+                <div className={i < arr.length - 1 ? 'pb-5' : ''}>
+                  <div className="text-[13px] font-medium text-text">{entry.note}</div>
+                  <div className="text-xs text-text-secondary mt-1">{entry.at}</div>
+                  <div className="flex gap-2 mt-1.5 items-center">
+                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ backgroundColor: style.bg, color: style.color }}>{style.label}</span>
+                    {entry.attachment && (
+                      <a href="#" className="text-xs text-primary no-underline" onClick={(e) => { e.preventDefault(); showToast('Opening receipt'); }}>{entry.attachment}</a>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* Auto-approval banner */}

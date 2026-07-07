@@ -5,15 +5,17 @@ import { useStore } from '../data/store';
 import StatusPill from '../components/shared/StatusPill';
 import InvoiceDetail from '../components/shared/InvoiceDetail';
 import OverrideModal from '../components/OverrideModal';
+import ActionModal from '../components/ActionModal';
 
 export default function ViewInvoice() {
   const { index } = useParams();
   const navigate = useNavigate();
-  const { invoices, updateAlert, showToast } = useStore();
+  const { invoices, updateAlert, updateInvoiceStatus, showToast } = useStore();
   const idx = parseInt(index, 10);
   const inv = invoices[idx];
 
   const [overrideTarget, setOverrideTarget] = useState(null);
+  const [actionModal, setActionModal] = useState(null);
 
   if (!inv) {
     return (
@@ -59,6 +61,22 @@ export default function ViewInvoice() {
           Invoice # {inv.num || <span className="text-text-secondary italic font-normal">Missing</span>}
         </h2>
         <StatusPill status={inv.status} />
+        {inv.status === 'pending' && (
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={() => setActionModal('reject')}
+              className="px-3 py-1.5 rounded-lg text-[13px] font-medium text-block border border-block/30 hover:bg-block-bg cursor-pointer"
+            >
+              Reject
+            </button>
+            <button
+              onClick={() => setActionModal('approve')}
+              className="px-3 py-1.5 rounded-lg text-[13px] font-medium bg-success text-white hover:opacity-90 cursor-pointer"
+            >
+              Approve
+            </button>
+          </div>
+        )}
       </div>
 
       <InvoiceDetail
@@ -75,6 +93,19 @@ export default function ViewInvoice() {
           onClose={() => setOverrideTarget(null)}
           onConfirm={handleOverrideConfirm}
           showToast={showToast}
+        />
+      )}
+
+      {actionModal && (
+        <ActionModal
+          kind={actionModal}
+          invoiceNum={inv.num}
+          onClose={() => setActionModal(null)}
+          onConfirm={() => {
+            updateInvoiceStatus(idx, actionModal === 'approve' ? 'approved' : 'rejected');
+            showToast(`${inv.num} ${actionModal === 'approve' ? 'approved' : 'rejected'}`);
+            setActionModal(null);
+          }}
         />
       )}
     </div>
