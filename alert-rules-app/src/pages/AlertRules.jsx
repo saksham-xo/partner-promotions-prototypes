@@ -437,7 +437,7 @@ export default function AlertRules() {
                         <p className="font-semibold text-text mb-1.5">How a scanned line item resolves to a SKU</p>
                         <p className="mb-1.5">Scanned invoices reliably carry only <span className="font-medium text-text">Material Name</span> — Material Code is rarely present or legible.</p>
                         <ol className="list-decimal list-inside space-y-1">
-                          <li><span className="font-medium text-text">Additional Match Key</span> (configured separately below, if set for this client) — checked first, only if scanned. An exact match resolves the line item immediately with high confidence.</li>
+                          <li><span className="font-medium text-text">Line Item Lookup Attributes</span> (configured separately below, if set for this client) — checked first, only if scanned. An exact match resolves the line item immediately with high confidence.</li>
                           <li><span className="font-medium text-text">Material Code</span> — checked next, only if scanned. An exact match against this master resolves the line item with high confidence.</li>
                           <li><span className="font-medium text-text">Material Name</span> — always present, so this is the base signal. Fuzzy-matched against this master; match strength drives the confidence score used to approve, flag for review, or reject.</li>
                         </ol>
@@ -479,11 +479,11 @@ export default function AlertRules() {
             </div>
           </section>
 
-          {/* Additional Match Key */}
+          {/* Line Item Lookup Attributes */}
           <section className="flex flex-col gap-3">
             <div>
               <h2 className="text-sm font-semibold text-text flex items-center gap-1.5">
-                Additional Match Key
+                Line Item Lookup Attributes
                 <span className="relative group">
                   <Info size={13} className="text-text-secondary" />
                   <div className="hidden group-hover:block absolute left-0 top-5 z-20 w-80 bg-surface border border-border rounded-lg shadow-lg p-3 text-xs text-text-secondary font-normal normal-case text-left">
@@ -498,7 +498,7 @@ export default function AlertRules() {
             <div className="border border-border rounded-lg overflow-visible">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
                 <button onClick={() => toggleAccordion('local')} className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-sm font-semibold text-text">Additional Match Key</span>
+                  <span className="text-sm font-semibold text-text">Line Item Lookup Attributes</span>
                   {openAccordions.local ? <ChevronUp size={16} className="text-text-secondary" /> : <ChevronDown size={16} className="text-text-secondary" />}
                 </button>
                 <button onClick={openMatchKeyModal} className="text-sm font-medium text-[#686c9d] cursor-pointer hover:underline">
@@ -564,17 +564,17 @@ export default function AlertRules() {
             </div>
           </section>
 
-          {/* Invoice Attributes */}
+          {/* Invoice Detail Validation Attributes */}
           <section className="flex flex-col gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-text">Invoice Attributes</h2>
+              <h2 className="text-sm font-semibold text-text">Invoice Detail Validation Attributes</h2>
               <p className="text-xs text-text-secondary mt-0.5">Header-level fields, each validated against its own master data — e.g. scanned stockist name against a verified stockist list.</p>
             </div>
 
             <div className="border border-border rounded-lg overflow-visible">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
                 <button onClick={() => toggleAccordion('invoice')} className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-sm font-semibold text-text">Invoice Attributes</span>
+                  <span className="text-sm font-semibold text-text">Invoice Detail Validation Attributes</span>
                   {openAccordions.invoice ? <ChevronUp size={16} className="text-text-secondary" /> : <ChevronDown size={16} className="text-text-secondary" />}
                 </button>
                 <button onClick={openInvoiceAttrModal} className="text-sm font-medium text-[#686c9d] cursor-pointer hover:underline">
