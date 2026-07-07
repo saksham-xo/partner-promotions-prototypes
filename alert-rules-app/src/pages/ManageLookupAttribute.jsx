@@ -54,6 +54,22 @@ export default function ManageLookupAttribute() {
     setShowUploadModal(false);
     showToast(`${target.name} mapping file uploaded — processing records`);
   };
+  const downloadSample = () => {
+    const rows = [
+      `${target.apiKey},product_code,status`,
+      '046L23PK,502896,N',
+      '512K24TB,514812,N',
+      '3311K25CP,514355,N',
+    ];
+    const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_lookup_attributes.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Sample file downloaded');
+  };
 
   return (
     <div>
@@ -172,7 +188,7 @@ export default function ManageLookupAttribute() {
               </div>
             </div>
             <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-              <button onClick={() => showToast('Sample file downloaded')} className="text-sm font-medium text-primary hover:underline cursor-pointer flex items-center gap-1.5">
+              <button onClick={downloadSample} className="text-sm font-medium text-primary hover:underline cursor-pointer flex items-center gap-1.5">
                 <Download size={14} /> Download Sample File
               </button>
               <div className="flex gap-2">

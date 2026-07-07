@@ -52,6 +52,22 @@ export default function ManageInvoiceAttribute() {
     setShowUploadModal(false);
     showToast(`${target.name} master data uploaded — processing records`);
   };
+  const downloadSample = () => {
+    const rows = [
+      `${target.apiKey},status`,
+      'SADGURU AGENCY,N',
+      'FOCUS MEDISALES,N',
+      'NEW GARODIA DISTRIBUTORS,N',
+    ];
+    const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_invoice_attributes.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Sample file downloaded');
+  };
 
   const addRecord = () => {
     const val = newValue.trim();
@@ -184,7 +200,7 @@ export default function ManageInvoiceAttribute() {
               </div>
             </div>
             <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-              <button onClick={() => showToast('Sample file downloaded')} className="text-sm font-medium text-primary hover:underline cursor-pointer flex items-center gap-1.5">
+              <button onClick={downloadSample} className="text-sm font-medium text-primary hover:underline cursor-pointer flex items-center gap-1.5">
                 <Download size={14} /> Download Sample File
               </button>
               <div className="flex gap-2">

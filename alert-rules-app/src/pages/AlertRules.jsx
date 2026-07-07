@@ -88,7 +88,7 @@ export default function AlertRules() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'catalogue_sample.csv';
+    a.download = 'sample_catalogue_attributes.csv';
     a.click();
     URL.revokeObjectURL(url);
     showToast('Sample file downloaded');
