@@ -349,8 +349,8 @@ export default function AlertRules() {
                 <div className="flex justify-end gap-2 px-4 py-3 border-b border-border bg-surface">
                   <button
                     onClick={() => { setCatalogueSearch(''); setShowViewCatalogueModal(true); }}
-                    disabled={catalogueRecords.length === 0}
-                    title={catalogueRecords.length === 0 ? 'No catalogue records uploaded yet' : undefined}
+                    disabled={isDefaultMode || catalogueRecords.length === 0}
+                    title={(isDefaultMode || catalogueRecords.length === 0) ? 'No catalogue records uploaded yet' : undefined}
                     className="flex items-center gap-1.5 text-primary border border-primary/30 px-4 py-2 rounded text-sm font-medium hover:bg-primary-light cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                   >
                     View Catalogue
