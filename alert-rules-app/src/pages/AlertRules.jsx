@@ -483,7 +483,7 @@ export default function AlertRules() {
           <section className="flex flex-col gap-3">
             <div className="border border-border rounded-lg overflow-visible">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
-                <button onClick={() => toggleAccordion('local')} className="flex items-center gap-2 cursor-pointer">
+                <button onClick={() => toggleAccordion('local')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
                     <span className="text-sm font-semibold text-text flex items-center gap-1.5">
                       Line Item Lookup Attributes
@@ -570,7 +570,7 @@ export default function AlertRules() {
           <section className="flex flex-col gap-3">
             <div className="border border-border rounded-lg overflow-visible">
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
-                <button onClick={() => toggleAccordion('invoice')} className="flex items-center gap-2 cursor-pointer">
+                <button onClick={() => toggleAccordion('invoice')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
                     <span className="text-sm font-semibold text-text block">Invoice Detail Validation Attributes</span>
                     <span className="text-xs text-text-secondary font-normal block mt-0.5">Header-level fields, each validated against its own master data — e.g. scanned stockist name against a verified stockist list.</span>
