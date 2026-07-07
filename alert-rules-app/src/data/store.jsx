@@ -32,6 +32,63 @@ export function StoreProvider({ children }) {
   const [devNotes, setDevNotes] = useState(false);
   const toggleDevNotes = () => setDevNotes(prev => !prev);
 
+  // SKU Master — fixed catalogue schema, replaces the Plum dependency. One row per SKU, populated directly by CSV upload.
+  const globalAttributes = [
+    { id: 'GATTR-001', name: 'Material Code', type: 'string', apiKey: 'product_code', unique: true, mandatory: true },
+    { id: 'GATTR-002', name: 'Material Name', type: 'string', apiKey: 'product_name', unique: false, mandatory: true },
+    { id: 'GATTR-003', name: 'Brand Name', type: 'string', apiKey: 'brand_name', unique: false, mandatory: false },
+  ];
+
+  // Additional Match Key — optional, client-specific (e.g. Batch ID for Lupin, not needed for SBD). Fixed 2-column
+  // schema (key value + SKU code) used only to resolve a scanned line item to a SKU; CSV populates the table directly.
+  const [matchKeys, setMatchKeys] = useState([
+    {
+      id: 'MKEY-001', name: 'Batch ID', apiKey: 'batch_id', type: 'string',
+      records: [
+        { id: 'MKREC-001', keyValue: '046L23PK', skuCode: '502896', active: true },
+        { id: 'MKREC-002', keyValue: '512K24TB', skuCode: '514812', active: true },
+        { id: 'MKREC-003', keyValue: '3311K25CP', skuCode: '514355', active: true },
+        { id: 'MKREC-004', keyValue: '9927L24SY', skuCode: '503541', active: true },
+        { id: 'MKREC-005', keyValue: '7742K23TB', skuCode: '514341', active: false },
+        { id: 'MKREC-006', keyValue: '1180L22PK', skuCode: '502896', active: true },
+      ],
+    },
+  ]);
+  const addMatchKey = (key) => {
+    setMatchKeys(prev => [...prev, { ...key, id: 'MKEY-' + String(prev.length + 1).padStart(3, '0'), type: 'string', records: [] }]);
+  };
+  const deleteMatchKey = (id) => {
+    setMatchKeys(prev => prev.filter(k => k.id !== id));
+  };
+  const addMatchKeyRecord = (matchKeyId, record) => {
+    setMatchKeys(prev => prev.map(k => k.id !== matchKeyId ? k : {
+      ...k,
+      records: [...k.records, { ...record, id: 'MKREC-' + String(k.records.length + 1).padStart(3, '0'), active: true }],
+    }));
+  };
+  const updateMatchKeyRecord = (matchKeyId, recordId, updates) => {
+    setMatchKeys(prev => prev.map(k => k.id !== matchKeyId ? k : {
+      ...k,
+      records: k.records.map(r => r.id === recordId ? { ...r, ...updates } : r),
+    }));
+  };
+  const toggleMatchKeyRecord = (matchKeyId, recordId) => {
+    setMatchKeys(prev => prev.map(k => k.id !== matchKeyId ? k : {
+      ...k,
+      records: k.records.map(r => r.id === recordId ? { ...r, active: !r.active } : r),
+    }));
+  };
+
+  const [invoiceAttributes, setInvoiceAttributes] = useState([
+    { id: 'IATTR-001', name: 'Stockist Name', type: 'string', apiKey: 'stockist_name', masterSource: 'Verified Stockist Master', recordCount: 3 },
+  ]);
+  const addInvoiceAttribute = (attr) => {
+    setInvoiceAttributes(prev => [...prev, { ...attr, id: 'IATTR-' + String(prev.length + 1).padStart(3, '0'), recordCount: 0 }]);
+  };
+  const deleteInvoiceAttribute = (id) => {
+    setInvoiceAttributes(prev => prev.filter(a => a.id !== id));
+  };
+
   const [approveRules, setApproveRules] = useState([
     { id: 'AR-001', name: 'Low Value Claims', priority: 1, on: true, minScanQuality: '80', desc: 'Auto-approve claims under ₹10,000 with a readable scan.', groups: [[{ f: 'totalAmount', op: 'lte', val: '10000' }]] },
   ]);
@@ -93,7 +150,7 @@ export function StoreProvider({ children }) {
   };
 
   return (
-    <StoreContext.Provider value={{ rules, invoices, toast, showToast, toggleRule, saveRule, deleteRule, duplicateRule, archiveRule, updateAlert, devNotes, toggleDevNotes, approveRules, toggleApproveRule, saveApproveRule, reorderApproveRules }}>
+    <StoreContext.Provider value={{ rules, invoices, toast, showToast, toggleRule, saveRule, deleteRule, duplicateRule, archiveRule, updateAlert, devNotes, toggleDevNotes, approveRules, toggleApproveRule, saveApproveRule, reorderApproveRules, globalAttributes, matchKeys, addMatchKey, deleteMatchKey, addMatchKeyRecord, updateMatchKeyRecord, toggleMatchKeyRecord, invoiceAttributes, addInvoiceAttribute, deleteInvoiceAttribute }}>
       {children}
     </StoreContext.Provider>
   );
