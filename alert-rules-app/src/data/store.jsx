@@ -34,9 +34,8 @@ export function StoreProvider({ children }) {
 
   // SKU Master — fixed catalogue schema, replaces the Plum dependency. One row per SKU, populated directly by CSV upload.
   const globalAttributes = [
-    { id: 'GATTR-001', name: 'Material Code', type: 'string', apiKey: 'product_code', unique: true, mandatory: true },
-    { id: 'GATTR-002', name: 'Material Name', type: 'string', apiKey: 'product_name', unique: false, mandatory: true },
-    { id: 'GATTR-003', name: 'Brand Name', type: 'string', apiKey: 'brand_name', unique: false, mandatory: false },
+    { id: 'GATTR-001', name: 'Product Code', type: 'string', apiKey: 'product_code', unique: true, mandatory: true },
+    { id: 'GATTR-002', name: 'Product Name', type: 'string', apiKey: 'product_name', unique: false, mandatory: true },
   ];
 
   // Additional Match Key — optional, client-specific (e.g. Batch ID for Lupin, not needed for SBD). Fixed 2-column

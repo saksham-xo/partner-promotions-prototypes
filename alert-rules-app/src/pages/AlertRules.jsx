@@ -421,7 +421,7 @@ export default function AlertRules() {
                 <button onClick={() => toggleAccordion('global')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
                     <span className="text-sm font-semibold text-text block">Catalogue Attributes</span>
-                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Defines the product catalogue schema — Material Code, Material Name, and Brand Name — populated directly via CSV upload.</span>
+                    <span className="text-xs text-text-secondary font-normal block mt-0.5">Defines the product catalogue schema</span>
                   </span>
                   {openAccordions.global ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
                 </button>
@@ -506,7 +506,7 @@ export default function AlertRules() {
                     <div className="w-11 h-11 rounded-full bg-[#FFF1E7] flex items-center justify-center mb-3">
                       <ClipboardCheck size={20} className="text-[#EA6C1E]" />
                     </div>
-                    <p className="text-sm text-text mb-4">No match key configured — matching relies on Material Code / Material Name only.</p>
+                    <p className="text-sm text-text mb-4">No match key configured — matching relies on Product Code / Product Name only.</p>
                     <button onClick={openMatchKeyModal} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
                       + Add Match Key
                     </button>
@@ -912,7 +912,7 @@ export default function AlertRules() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
                 <div className="text-base font-semibold text-text">Upload SKU Master</div>
-                <p className="text-xs text-text-secondary mt-1">Upload file to add or update Material Code, Material Name, and Brand Name in bulk. Populates the SKU Master table directly.</p>
+                <p className="text-xs text-text-secondary mt-1">Upload file to add or update Product Code and Product Name in bulk. Populates the SKU Master table directly.</p>
               </div>
               <button onClick={() => setShowUploadModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
             </div>
