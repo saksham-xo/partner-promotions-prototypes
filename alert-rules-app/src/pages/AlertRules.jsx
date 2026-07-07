@@ -520,7 +520,7 @@ export default function AlertRules() {
                   <table className="w-full">
                     <thead>
                       <tr>
-                        {['Match key name', 'API & File Key', 'Data type', 'Mapped records', 'Actions'].map(h => (
+                        {['Match key name', 'Data type', 'API & File Key', 'Mapped records', 'Actions'].map(h => (
                           <th key={h} className="text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
@@ -529,10 +529,10 @@ export default function AlertRules() {
                       {matchKeys.map(a => (
                         <tr key={a.id} className="border-t border-border">
                           <td className="px-4 py-3 text-sm text-text">{a.name}</td>
-                          <td className="px-4 py-3 text-sm text-text-secondary font-mono">{a.apiKey}</td>
                           <td className="px-4 py-3">
                             <span className="highlight-span" style={attributeTypeColor[a.type]}>{attributeTypeLabel[a.type]}</span>
                           </td>
+                          <td className="px-4 py-3 text-sm text-text-secondary font-mono">{a.apiKey}</td>
                           <td className="px-4 py-3 text-sm text-text">{a.records.length}</td>
                           <td className="px-4 py-3 relative">
                             <button onClick={() => setOpenKebab(openKebab === a.id ? null : a.id)} className="p-1 text-text-secondary hover:text-text cursor-pointer">
