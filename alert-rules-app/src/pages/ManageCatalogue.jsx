@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Upload, Download, AlertTriangle } from 'lucide-react';
 import { useStore } from '../data/store';
 
@@ -16,11 +16,9 @@ function Toggle({ checked, onChange, title }) {
   );
 }
 
-export default function ManageLookupAttribute() {
+export default function ManageCatalogue() {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const { matchKeys, toggleMatchKeyRecord, showToast, confirmMatchKey, discardMatchKeyDraft } = useStore();
-  const target = matchKeys.find(k => k.id === id) || null;
+  const { catalogueRecords, toggleCatalogueRecord, showToast } = useStore();
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -29,20 +27,9 @@ export default function ManageLookupAttribute() {
   const [uploadFile, setUploadFile] = useState(null);
   const fileInputRef = useRef(null);
 
-  if (!target) {
-    return (
-      <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)] p-6 text-center text-sm text-text-secondary">
-        Lookup Attribute not found.
-        <div className="mt-3">
-          <button onClick={() => navigate(SETTINGS_PATH)} className="text-primary font-medium hover:underline cursor-pointer">Back to Settings</button>
-        </div>
-      </div>
-    );
-  }
-
-  const filteredRecords = target.records.filter(r =>
-    r.keyValue.toLowerCase().includes(search.toLowerCase()) ||
-    r.skuCode.toLowerCase().includes(search.toLowerCase())
+  const filteredRecords = catalogueRecords.filter(r =>
+    r.code.toLowerCase().includes(search.toLowerCase()) ||
+    r.name.toLowerCase().includes(search.toLowerCase())
   );
   const pagedRecords = filteredRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -53,39 +40,41 @@ export default function ManageLookupAttribute() {
   };
   const submitUpload = () => {
     setShowUploadModal(false);
-    showToast(`${target.name} mapping file uploaded — processing records`);
+    showToast('Catalogue file uploaded — table updated');
   };
   const downloadSample = () => {
     const rows = [
-      `${target.apiKey},product_code,status`,
-      '046L23PK,502896,N',
-      '512K24TB,514812,N',
-      '3311K25CP,514355,N',
+      'product_code,product_name,active',
+      'PRD-1001,Sample Product A,y',
+      'PRD-1002,Sample Product B,y',
+      'PRD-1002,Sample Product B Alias,y',
+      'PRD-1003,Sample Product C,y',
+      'PRD-1004,Sample Product D,n',
     ];
     const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'sample_lookup_attributes.csv';
+    a.download = 'sample_catalogue_attributes.csv';
     a.click();
     URL.revokeObjectURL(url);
     showToast('Sample file downloaded');
   };
 
   const acceptToggle = () => {
-    toggleMatchKeyRecord(id, pendingToggle.id);
+    toggleCatalogueRecord(pendingToggle.id);
     setPendingToggle(null);
   };
 
   return (
     <div>
       <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)] p-4 px-6 flex items-center gap-3 mb-6">
-        <button onClick={() => { discardMatchKeyDraft(id); navigate(SETTINGS_PATH); }} className="hover:bg-bg rounded-lg p-2 cursor-pointer transition-colors">
+        <button onClick={() => navigate(SETTINGS_PATH)} className="hover:bg-bg rounded-lg p-2 cursor-pointer transition-colors">
           <ChevronLeft size={20} className="text-text" />
         </button>
         <div>
-          <h1 className="text-xl font-semibold text-text">Manage {target.name}</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Search, add, edit, or bulk-upload {target.name} &amp; Product Code mappings.</p>
+          <h1 className="text-xl font-semibold text-text">Manage Catalogue</h1>
+          <p className="text-sm text-text-secondary mt-0.5">Search, or bulk-upload Product Code &amp; Product Name pairs.</p>
         </div>
       </div>
 
@@ -95,38 +84,34 @@ export default function ManageLookupAttribute() {
             type="text"
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder={`Search by ${target.name} or Product Code`}
+            placeholder="Search by Product Code or Product Name"
             className="flex-1 px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
           />
           <button
             onClick={openUploadModal}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary-light cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-[#354499] cursor-pointer whitespace-nowrap"
           >
-            <Upload size={14} /> Upload CSV
-          </button>
-          <button
-            onClick={() => navigate(`/partner-promotions/invoice-management/settings/lookup-attributes/${id}/mapping/create`)}
-            className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-[#354499] cursor-pointer whitespace-nowrap"
-          >
-            + Add Mapping
+            <Upload size={14} /> Upload Catalogue
           </button>
         </div>
         <div className="px-5">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-text-secondary text-xs">
-                <th className="py-2 pr-3 font-medium">{target.name}</th>
                 <th className="py-2 pr-3 font-medium">Product Code</th>
+                <th className="py-2 pr-3 font-medium">Product Name</th>
+                <th className="py-2 pr-3 font-medium">Date Uploaded</th>
                 <th className="py-2 pr-3 font-medium">Active</th>
               </tr>
             </thead>
             <tbody>
               {pagedRecords.length === 0 ? (
-                <tr><td colSpan={3} className="py-8 text-center text-text-secondary text-sm">No mappings found.</td></tr>
+                <tr><td colSpan={4} className="py-8 text-center text-text-secondary text-sm">No records found.</td></tr>
               ) : pagedRecords.map(r => (
                 <tr key={r.id} className="border-t border-border">
-                  <td className="py-2.5 pr-3 font-mono text-xs text-text">{r.keyValue}</td>
-                  <td className="py-2.5 pr-3 font-mono text-xs text-text">{r.skuCode}</td>
+                  <td className="py-2.5 pr-3 font-mono text-xs text-text">{r.code}</td>
+                  <td className="py-2.5 pr-3 text-xs text-text">{r.name}</td>
+                  <td className="py-2.5 pr-3 text-xs text-text-secondary">{r.dateUploaded}</td>
                   <td className="py-2.5 pr-3">
                     <Toggle checked={r.active} onChange={() => setPendingToggle(r)} title="Once uploaded, records can only be disabled — not edited" />
                   </td>
@@ -160,23 +145,13 @@ export default function ManageLookupAttribute() {
         </div>
       </div>
 
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={() => { confirmMatchKey(id); showToast(`${target.name} mappings saved`); navigate(SETTINGS_PATH); }}
-          disabled={target.records.length === 0}
-          className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Save
-        </button>
-      </div>
-
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowUploadModal(false)}>
           <div className="bg-surface rounded-lg shadow-xl w-[480px]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
-                <div className="text-base font-semibold text-text">Upload {target.name} Mapping</div>
-                <p className="text-xs text-text-secondary mt-1">Upload {target.name} → Product Code records in bulk to populate this mapping table.</p>
+                <div className="text-base font-semibold text-text">Upload Catalogue</div>
+                <p className="text-xs text-text-secondary mt-1">Upload a CSV file to import product catalogue data. Every row is added as a new record — existing records can't be edited, only activated or deactivated. Use the active column (y/n) to control status.</p>
               </div>
               <button onClick={() => setShowUploadModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
             </div>

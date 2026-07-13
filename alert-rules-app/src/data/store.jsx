@@ -37,32 +37,49 @@ export function StoreProvider({ children }) {
   const [devNotes, setDevNotes] = useState(false);
   const toggleDevNotes = () => setDevNotes(prev => !prev);
 
-  // SKU Master — fixed catalogue schema, replaces the Plum dependency. One row per SKU, populated directly by CSV upload.
+  // Audit trail — every Active/Inactive toggle across Catalogue, Lookup, and Invoice Attributes is logged here.
+  const [auditLog, setAuditLog] = useState([]);
+  const logAudit = ({ entity, recordLabel, field, oldValue, newValue }) => {
+    setAuditLog(prev => [{
+      id: 'AUD-' + String(prev.length + 1).padStart(4, '0'),
+      entity, recordLabel, field,
+      oldValue: oldValue ? 'Active' : 'Inactive',
+      newValue: newValue ? 'Active' : 'Inactive',
+      changedBy: 'Admin',
+      at: new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+    }, ...prev]);
+  };
+
+  // SKU Master — fixed catalogue schema, replaces the Plum dependency. (product_code, product_name) pairs are
+  // the unique unit — neither column is unique on its own, since one product_code can have multiple recognised
+  // names (and vice versa). Insert-only: uploads/adds always create a new row, never update an existing one.
   const globalAttributes = [
-    { id: 'GATTR-000', name: 'Reference ID', type: 'string', apiKey: 'reference_id', unique: true, mandatory: true },
-    { id: 'GATTR-001', name: 'Product Code', type: 'string', apiKey: 'product_code', unique: true, mandatory: true },
+    { id: 'GATTR-001', name: 'Product Code', type: 'string', apiKey: 'product_code', unique: false, mandatory: true },
     { id: 'GATTR-002', name: 'Product Name', type: 'string', apiKey: 'product_name', unique: false, mandatory: true },
   ];
 
-  // id is the stable relation reference for a catalogue row — assigned once at creation and
-  // never reassigned, so a later product_code change (via status=U upload) can still be traced
-  // back to the same underlying product.
-  const catalogueRecords = [
-    { id: '1', code: '502896', name: 'Injection Vial 10ml' },
-    { id: '2', code: '514812', name: 'Glucose Monitor Kit' },
-    { id: '3', code: '514355', name: 'Insulin Pen 3ml' },
-    { id: '4', code: '503541', name: 'Antibiotic Tab' },
-    { id: '5', code: '514341', name: 'Paracetamol 500mg' },
-    { id: '6', code: '514320', name: 'Iron Supplement Tab' },
-    { id: '7', code: '512067', name: 'Syringe Pack 5ml' },
-    { id: '8', code: '509214', name: 'TAIXIN FORCE DRY SYRUP' },
-  ];
+  // id is just the React key / toggle target — there is no user-facing reference ID.
+  const [catalogueRecords, setCatalogueRecords] = useState([
+    { id: '1', code: '502896', name: 'Injection Vial 10ml', active: true, dateUploaded: '02 Jul, 2026' },
+    { id: '2', code: '514812', name: 'Glucose Monitor Kit', active: true, dateUploaded: '02 Jul, 2026' },
+    { id: '3', code: '514355', name: 'Insulin Pen 3ml', active: true, dateUploaded: '02 Jul, 2026' },
+    { id: '4', code: '503541', name: 'Antibiotic Tab', active: true, dateUploaded: '02 Jul, 2026' },
+    { id: '5', code: '514341', name: 'Paracetamol 500mg', active: true, dateUploaded: '05 Jul, 2026' },
+    { id: '6', code: '514320', name: 'Iron Supplement Tab', active: true, dateUploaded: '05 Jul, 2026' },
+    { id: '7', code: '512067', name: 'Syringe Pack 5ml', active: true, dateUploaded: '05 Jul, 2026' },
+    { id: '8', code: '509214', name: 'TAIXIN FORCE DRY SYRUP', active: true, dateUploaded: '08 Jul, 2026' },
+  ]);
+  const toggleCatalogueRecord = (recordId) => {
+    const record = catalogueRecords.find(r => r.id === recordId);
+    setCatalogueRecords(prev => prev.map(r => r.id === recordId ? { ...r, active: !r.active } : r));
+    if (record) logAudit({ entity: 'Catalogue Attributes', recordLabel: `${record.code} — ${record.name}`, field: 'Active', oldValue: record.active, newValue: !record.active });
+  };
 
   // Additional Match Key — optional, client-specific (e.g. Batch ID for Lupin, not needed for SBD). Fixed 2-column
   // schema (key value + SKU code) used only to resolve a scanned line item to a SKU; CSV populates the table directly.
   const [matchKeys, setMatchKeys] = useState([
     {
-      id: 'MKEY-001', name: 'Batch ID', apiKey: 'batch_id', type: 'string',
+      id: 'MKEY-001', name: 'Batch ID', apiKey: 'batch_id', type: 'string', unique: false, mandatory: true,
       records: [
         { id: 'MKREC-001', keyValue: '046L23PK', skuCode: '502896', active: true },
         { id: 'MKREC-002', keyValue: '512K24TB', skuCode: '514812', active: true },
@@ -75,8 +92,14 @@ export function StoreProvider({ children }) {
   ]);
   const addMatchKey = (key) => {
     const id = 'MKEY-' + String(matchKeys.length + 1).padStart(3, '0');
-    setMatchKeys(prev => [...prev, { type: 'string', ...key, id, records: [] }]);
+    setMatchKeys(prev => [...prev, { type: 'string', unique: false, mandatory: true, ...key, id, records: [], draft: true }]);
     return id;
+  };
+  const confirmMatchKey = (id) => {
+    setMatchKeys(prev => prev.map(k => k.id === id ? { ...k, draft: false } : k));
+  };
+  const discardMatchKeyDraft = (id) => {
+    setMatchKeys(prev => prev.filter(k => k.id !== id || !k.draft));
   };
   const addMatchKeyRecord = (matchKeyId, record) => {
     setMatchKeys(prev => prev.map(k => k.id !== matchKeyId ? k : {
@@ -91,15 +114,18 @@ export function StoreProvider({ children }) {
     }));
   };
   const toggleMatchKeyRecord = (matchKeyId, recordId) => {
+    const key = matchKeys.find(k => k.id === matchKeyId);
+    const record = key?.records.find(r => r.id === recordId);
     setMatchKeys(prev => prev.map(k => k.id !== matchKeyId ? k : {
       ...k,
       records: k.records.map(r => r.id === recordId ? { ...r, active: !r.active } : r),
     }));
+    if (key && record) logAudit({ entity: 'Lookup Attributes', recordLabel: `${key.name}: ${record.keyValue} → ${record.skuCode}`, field: 'Active', oldValue: record.active, newValue: !record.active });
   };
 
   const [invoiceAttributes, setInvoiceAttributes] = useState([
     {
-      id: 'IATTR-001', name: 'Stockist Name', type: 'string', apiKey: 'stockist_name', masterSource: 'Customer',
+      id: 'IATTR-001', name: 'Supplier Name', type: 'string', apiKey: 'supplier_name', invoiceField: 'Supplier Name',
       records: [
         { id: 'IAREC-001', keyValue: 'SADGURU AGENCY', active: true },
         { id: 'IAREC-002', keyValue: 'FOCUS MEDISALES', active: true },
@@ -109,8 +135,14 @@ export function StoreProvider({ children }) {
   ]);
   const addInvoiceAttribute = (attr) => {
     const id = 'IATTR-' + String(invoiceAttributes.length + 1).padStart(3, '0');
-    setInvoiceAttributes(prev => [...prev, { ...attr, id, records: [] }]);
+    setInvoiceAttributes(prev => [...prev, { ...attr, id, records: [], draft: true }]);
     return id;
+  };
+  const confirmInvoiceAttribute = (id) => {
+    setInvoiceAttributes(prev => prev.map(a => a.id === id ? { ...a, draft: false } : a));
+  };
+  const discardInvoiceAttributeDraft = (id) => {
+    setInvoiceAttributes(prev => prev.filter(a => a.id !== id || !a.draft));
   };
   const addInvoiceAttributeRecord = (attrId, record) => {
     setInvoiceAttributes(prev => prev.map(a => a.id !== attrId ? a : {
@@ -119,10 +151,13 @@ export function StoreProvider({ children }) {
     }));
   };
   const toggleInvoiceAttributeRecord = (attrId, recordId) => {
+    const attr = invoiceAttributes.find(a => a.id === attrId);
+    const record = attr?.records.find(r => r.id === recordId);
     setInvoiceAttributes(prev => prev.map(a => a.id !== attrId ? a : {
       ...a,
       records: a.records.map(r => r.id === recordId ? { ...r, active: !r.active } : r),
     }));
+    if (attr && record) logAudit({ entity: 'Invoice Attributes', recordLabel: `${attr.name}: ${record.keyValue}`, field: 'Active', oldValue: record.active, newValue: !record.active });
   };
   const [approveRules, setApproveRules] = useState([
     { id: 'AR-001', name: 'Low Value Claims', priority: 1, on: true, minScanQuality: '80', desc: 'Auto-approve claims under ₹10,000 with a readable scan.', groups: [[{ f: 'totalAmount', op: 'lte', val: '10000' }]] },
@@ -189,7 +224,7 @@ export function StoreProvider({ children }) {
   };
 
   return (
-    <StoreContext.Provider value={{ rules, invoices, toast, showToast, toggleRule, saveRule, deleteRule, duplicateRule, archiveRule, updateAlert, updateInvoiceStatus, devNotes, toggleDevNotes, approveRules, toggleApproveRule, saveApproveRule, reorderApproveRules, globalAttributes, catalogueRecords, matchKeys, addMatchKey, addMatchKeyRecord, updateMatchKeyRecord, toggleMatchKeyRecord, invoiceAttributes, addInvoiceAttribute, addInvoiceAttributeRecord, toggleInvoiceAttributeRecord }}>
+    <StoreContext.Provider value={{ rules, invoices, toast, showToast, toggleRule, saveRule, deleteRule, duplicateRule, archiveRule, updateAlert, updateInvoiceStatus, devNotes, toggleDevNotes, approveRules, toggleApproveRule, saveApproveRule, reorderApproveRules, globalAttributes, catalogueRecords, toggleCatalogueRecord, matchKeys, addMatchKey, addMatchKeyRecord, updateMatchKeyRecord, toggleMatchKeyRecord, confirmMatchKey, discardMatchKeyDraft, invoiceAttributes, addInvoiceAttribute, addInvoiceAttributeRecord, toggleInvoiceAttributeRecord, confirmInvoiceAttribute, discardInvoiceAttributeDraft, auditLog }}>
       {children}
     </StoreContext.Provider>
   );

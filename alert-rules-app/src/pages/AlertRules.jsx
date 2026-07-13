@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronUp, ChevronDown, AlertTriangle, MoreHorizontal, Pencil, Upload, Download, ClipboardCheck } from 'lucide-react';
+import { ChevronLeft, ChevronUp, ChevronDown, AlertTriangle, MoreHorizontal, Pencil, ClipboardCheck } from 'lucide-react';
 import { useStore } from '../data/store';
 
 const attributeTypes = [
@@ -55,44 +55,6 @@ export default function AlertRules() {
   const { rules, toggleRule, saveRule, showToast, devNotes, globalAttributes, catalogueRecords, matchKeys, invoiceAttributes } = useStore();
   const [openAccordions, setOpenAccordions] = useState({ global: true, local: true, invoice: true });
   const [openKebab, setOpenKebab] = useState(null);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadFile, setUploadFile] = useState(null);
-  const fileInputRef = useRef(null);
-
-  const [showViewCatalogueModal, setShowViewCatalogueModal] = useState(false);
-  const [catalogueSearch, setCatalogueSearch] = useState('');
-  const filteredCatalogueRecords = catalogueRecords.filter(r =>
-    r.code.toLowerCase().includes(catalogueSearch.toLowerCase()) ||
-    r.name.toLowerCase().includes(catalogueSearch.toLowerCase())
-  );
-
-  const openUploadModal = () => { setUploadFile(null); setShowUploadModal(true); };
-  const handleUploadFile = (e) => {
-    const file = e.target.files[0];
-    if (file) setUploadFile(file);
-  };
-  const submitUpload = () => {
-    setShowUploadModal(false);
-    showToast('Catalogue file uploaded — table updated');
-  };
-  const downloadCatalogueSample = () => {
-    const rows = [
-      'reference_id,product_code,product_name,status',
-      '1,PRD-1001,Sample Product A,N',
-      '=MAX($A$2:A2)+1,PRD-1002,Sample Product B,N',
-      '=MAX($A$2:A3)+1,PRD-1003,Sample Product C,N',
-      '=MAX($A$2:A4)+1,PRD-1004,Sample Product D,N',
-      '=MAX($A$2:A5)+1,PRD-1005,Sample Product E,N',
-    ];
-    const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sample_catalogue_attributes.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Sample file downloaded');
-  };
 
   const toggleAccordion = (key) => setOpenAccordions(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -348,15 +310,18 @@ export default function AlertRules() {
                 <>
                 <div className="flex justify-end gap-2 px-4 py-3 border-b border-border bg-surface">
                   <button
-                    onClick={() => { setCatalogueSearch(''); setShowViewCatalogueModal(true); }}
-                    disabled={isDefaultMode || catalogueRecords.length === 0}
-                    title={(isDefaultMode || catalogueRecords.length === 0) ? 'No catalogue records uploaded yet' : undefined}
-                    className="flex items-center gap-1.5 text-primary border border-primary/30 px-4 py-2 rounded text-sm font-medium hover:bg-primary-light cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    disabled
+                    title="Coming soon"
+                    className="flex items-center gap-1.5 text-primary border border-primary/30 px-4 py-2 rounded text-sm font-medium cursor-not-allowed opacity-40"
                   >
-                    View Catalogue
+                    + Add Catalogue Attribute
                   </button>
-                  <button onClick={openUploadModal} className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
-                    <Upload size={14} /> Upload Catalogue
+                  <button
+                    onClick={() => navigate('/partner-promotions/invoice-management/settings/catalogue')}
+                    disabled={isDefaultMode}
+                    className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Manage Catalogue
                   </button>
                 </div>
                 <table className="w-full table-fixed border-t border-border">
@@ -419,8 +384,8 @@ export default function AlertRules() {
                   <table className="w-full table-fixed">
                     <thead>
                       <tr>
-                        {[['Attribute name', 'w-[25%]'], ['Data type', 'w-[15%]'], ['API & File Key', 'w-[25%]'], ['Mapped records', 'w-[17.5%]'], ['Actions', 'w-[17.5%]']].map(([h, w]) => (
-                          <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap ${w}`}>{h}</th>
+                        {[['Attribute name', 'w-[16%]'], ['Data type', 'w-[11%]'], ['API & File Key', 'w-[19%]'], ['Unique per Product Code', 'w-[20%]'], ['Field is mandatory', 'w-[15%]'], ['Actions', 'w-[11%]']].map(([h, w]) => (
+                          <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] ${h === 'Unique per Product Code' ? 'whitespace-normal leading-tight' : 'whitespace-nowrap'} ${w}`}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -432,7 +397,8 @@ export default function AlertRules() {
                             <span className="highlight-span" style={attributeTypeColor[a.type]}>{attributeTypeLabel[a.type]}</span>
                           </td>
                           <td className="px-4 py-3 text-sm text-text-secondary font-mono">{a.apiKey}</td>
-                          <td className="px-4 py-3 text-sm text-text">{a.records.length}</td>
+                          <td className="px-4 py-3 text-sm text-text">{a.unique ? 'True' : 'False'}</td>
+                          <td className="px-4 py-3 text-sm text-text">{a.mandatory ? 'True' : 'False'}</td>
                           <td className="px-4 py-3 relative">
                             <button onClick={() => setOpenKebab(openKebab === a.id ? null : a.id)} className="p-1 text-text-secondary hover:text-text cursor-pointer">
                               <MoreHorizontal size={16} />
@@ -443,7 +409,7 @@ export default function AlertRules() {
                                   onClick={() => { navigate(`/partner-promotions/invoice-management/settings/lookup-attributes/${a.id}`); setOpenKebab(null); }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg cursor-pointer"
                                 >
-                                  <Pencil size={14} /> Manage Mappings
+                                  Edit
                                 </button>
                               </div>
                             )}
@@ -491,7 +457,7 @@ export default function AlertRules() {
                   <table className="w-full table-fixed">
                     <thead>
                       <tr>
-                        {[['Attribute name', 'w-[25%]'], ['Data type', 'w-[15%]'], ['API & File Key', 'w-[25%]'], ['Validated Against', 'w-[17.5%]'], ['Actions', 'w-[17.5%]']].map(([h, w]) => (
+                        {[['Attribute name', 'w-[30%]'], ['Data type', 'w-[17.5%]'], ['API & File Key', 'w-[30%]'], ['Actions', 'w-[22.5%]']].map(([h, w]) => (
                           <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap ${w}`}>{h}</th>
                         ))}
                       </tr>
@@ -504,7 +470,6 @@ export default function AlertRules() {
                             <span className="highlight-span" style={attributeTypeColor[a.type]}>{attributeTypeLabel[a.type]}</span>
                           </td>
                           <td className="px-4 py-3 text-sm text-text-secondary font-mono">{a.apiKey}</td>
-                          <td className="px-4 py-3 text-sm text-text">{a.masterSource}</td>
                           <td className="px-4 py-3 relative">
                             <button onClick={() => setOpenKebab(openKebab === a.id ? null : a.id)} className="p-1 text-text-secondary hover:text-text cursor-pointer">
                               <MoreHorizontal size={16} />
@@ -515,7 +480,7 @@ export default function AlertRules() {
                                   onClick={() => { navigate(`/partner-promotions/invoice-management/settings/invoice-attributes/${a.id}`); setOpenKebab(null); }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg cursor-pointer"
                                 >
-                                  <Pencil size={14} /> Manage Mappings
+                                  Edit
                                 </button>
                               </div>
                             )}
@@ -566,87 +531,6 @@ export default function AlertRules() {
         </div>
       )}
 
-      {showViewCatalogueModal && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowViewCatalogueModal(false)}>
-          <div className="bg-surface rounded-lg shadow-xl w-[560px] max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <div className="text-base font-semibold text-text">View Catalogue</div>
-              <button onClick={() => setShowViewCatalogueModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
-            </div>
-            <div className="px-5 py-3 border-b border-border">
-              <input
-                type="text"
-                value={catalogueSearch}
-                onChange={e => setCatalogueSearch(e.target.value)}
-                placeholder="Search by Product Code or Product Name"
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
-              />
-            </div>
-            <div className="flex-1 overflow-y-auto px-5">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-text-secondary text-xs">
-                    <th className="py-2 pr-3 font-medium">Reference ID</th>
-                    <th className="py-2 pr-3 font-medium">Product Code</th>
-                    <th className="py-2 pr-3 font-medium">Product Name</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCatalogueRecords.length === 0 ? (
-                    <tr><td colSpan={3} className="py-8 text-center text-text-secondary text-sm">No records found.</td></tr>
-                  ) : filteredCatalogueRecords.map(r => (
-                    <tr key={r.id} className="border-t border-border">
-                      <td className="py-2.5 pr-3 font-mono text-xs text-text-secondary">{r.id}</td>
-                      <td className="py-2.5 pr-3 font-mono text-xs text-text">{r.code}</td>
-                      <td className="py-2.5 pr-3 text-xs text-text">{r.name}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex items-center justify-between px-5 py-3 border-t border-border text-xs text-text-secondary">
-              <span>{filteredCatalogueRecords.length} of {catalogueRecords.length} records</span>
-              <button onClick={() => setShowViewCatalogueModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setShowUploadModal(false)}>
-          <div className="bg-surface rounded-lg shadow-xl w-[480px]" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <div>
-                <div className="text-base font-semibold text-text">Upload Catalogue</div>
-                <p className="text-xs text-text-secondary mt-1">Upload a CSV file to import product catalogue data. Reference ID is mandatory — generate a new one for new products (N), reuse the existing one for updates (U).</p>
-              </div>
-              <button onClick={() => setShowUploadModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
-            </div>
-            <div className="p-5">
-              <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleUploadFile} />
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border rounded-lg py-9 px-4 text-center cursor-pointer hover:border-primary hover:bg-bg/40 transition-colors"
-              >
-                <div className="w-9 h-9 rounded-lg border border-primary/30 text-primary flex items-center justify-center mx-auto mb-3">
-                  <Upload size={16} />
-                </div>
-                <div className="text-sm font-semibold text-text mb-1">{uploadFile ? uploadFile.name : 'Upload File'}</div>
-                <div className="text-xs text-text-secondary">{uploadFile ? 'File selected — click to replace' : 'Upto 25,000 records & .csv file'}</div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-              <button onClick={downloadCatalogueSample} className="text-sm font-medium text-primary hover:underline cursor-pointer flex items-center gap-1.5">
-                <Download size={14} /> Download Sample File
-              </button>
-              <div className="flex gap-2">
-                <button onClick={() => setShowUploadModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">Cancel</button>
-                <button onClick={submitUpload} disabled={!uploadFile} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

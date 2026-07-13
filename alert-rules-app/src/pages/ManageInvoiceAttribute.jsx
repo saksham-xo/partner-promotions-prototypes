@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Upload, Download } from 'lucide-react';
+import { ChevronLeft, Upload, Download, AlertTriangle } from 'lucide-react';
 import { useStore } from '../data/store';
 
 const SETTINGS_PATH = '/partner-promotions/invoice-management/settings';
@@ -19,14 +19,14 @@ function Toggle({ checked, onChange, title }) {
 export default function ManageInvoiceAttribute() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { invoiceAttributes, addInvoiceAttributeRecord, toggleInvoiceAttributeRecord, showToast } = useStore();
+  const { invoiceAttributes, toggleInvoiceAttributeRecord, showToast, confirmInvoiceAttribute, discardInvoiceAttributeDraft } = useStore();
   const target = invoiceAttributes.find(a => a.id === id) || null;
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [pendingToggle, setPendingToggle] = useState(null);
   const [uploadFile, setUploadFile] = useState(null);
-  const [newValue, setNewValue] = useState('');
   const fileInputRef = useRef(null);
 
   if (!target) {
@@ -69,23 +69,20 @@ export default function ManageInvoiceAttribute() {
     showToast('Sample file downloaded');
   };
 
-  const addRecord = () => {
-    const val = newValue.trim();
-    if (!val) return;
-    addInvoiceAttributeRecord(id, { keyValue: val });
-    setNewValue('');
-    showToast(`"${val}" added to ${target.name}`);
+  const acceptToggle = () => {
+    toggleInvoiceAttributeRecord(id, pendingToggle.id);
+    setPendingToggle(null);
   };
 
   return (
     <div>
       <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)] p-4 px-6 flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(SETTINGS_PATH)} className="hover:bg-bg rounded-lg p-2 cursor-pointer transition-colors">
+        <button onClick={() => { discardInvoiceAttributeDraft(id); navigate(SETTINGS_PATH); }} className="hover:bg-bg rounded-lg p-2 cursor-pointer transition-colors">
           <ChevronLeft size={20} className="text-text" />
         </button>
         <div>
           <h1 className="text-xl font-semibold text-text">Manage {target.name}</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Search, add, or bulk-upload verified {target.name} values from {target.masterSource} master data.</p>
+          <p className="text-sm text-text-secondary mt-0.5">Search, add, edit, or bulk-upload {target.name} master data.</p>
         </div>
       </div>
 
@@ -104,19 +101,11 @@ export default function ManageInvoiceAttribute() {
           >
             <Upload size={14} /> Upload CSV
           </button>
-          <input
-            type="text"
-            value={newValue}
-            onChange={e => setNewValue(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addRecord()}
-            placeholder={`Add ${target.name} value`}
-            className="px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary whitespace-nowrap w-56"
-          />
           <button
-            onClick={addRecord}
+            onClick={() => navigate(`/partner-promotions/invoice-management/settings/invoice-attributes/${id}/mapping/create`)}
             className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-[#354499] cursor-pointer whitespace-nowrap"
           >
-            + Add Value
+            + Add Mapping
           </button>
         </div>
         <div className="px-5">
@@ -134,7 +123,7 @@ export default function ManageInvoiceAttribute() {
                 <tr key={r.id} className="border-t border-border">
                   <td className="py-2.5 pr-3 text-xs text-text">{r.keyValue}</td>
                   <td className="py-2.5 pr-3">
-                    <Toggle checked={r.active} onChange={() => toggleInvoiceAttributeRecord(id, r.id)} title="Once uploaded, records can only be disabled — not edited" />
+                    <Toggle checked={r.active} onChange={() => setPendingToggle(r)} title="Once uploaded, records can only be disabled — not edited" />
                   </td>
                 </tr>
               ))}
@@ -168,7 +157,7 @@ export default function ManageInvoiceAttribute() {
 
       <div className="flex justify-end mt-4">
         <button
-          onClick={() => { showToast(`${target.name} mappings saved`); navigate(SETTINGS_PATH); }}
+          onClick={() => { confirmInvoiceAttribute(id); showToast(`${target.name} mappings saved`); navigate(SETTINGS_PATH); }}
           disabled={target.records.length === 0}
           className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -207,6 +196,33 @@ export default function ManageInvoiceAttribute() {
                 <button onClick={() => setShowUploadModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">Cancel</button>
                 <button onClick={submitUpload} disabled={!uploadFile} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingToggle && (
+        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center" onClick={() => setPendingToggle(null)}>
+          <div className="bg-surface rounded-lg shadow-xl w-[480px]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={20} className="text-block" />
+                <span className="text-base font-semibold text-text">{pendingToggle.active ? 'Deactivate' : 'Activate'} Record</span>
+              </div>
+              <button onClick={() => setPendingToggle(null)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-text leading-relaxed">
+                This action will be recorded in the Audit Trail. Click "Accept" to {pendingToggle.active ? 'deactivate' : 'activate'} this record.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-border">
+              <button onClick={() => setPendingToggle(null)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">
+                Cancel
+              </button>
+              <button onClick={acceptToggle} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer">
+                Accept
+              </button>
             </div>
           </div>
         </div>

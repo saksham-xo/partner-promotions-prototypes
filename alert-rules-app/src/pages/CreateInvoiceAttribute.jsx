@@ -5,12 +5,9 @@ import { useStore } from '../data/store';
 
 const SETTINGS_PATH = '/partner-promotions/invoice-management/settings';
 
-const attributeTypes = [
-  { v: 'string', l: 'String' },
-  { v: 'int', l: 'Numbers' },
-  { v: 'float', l: 'Decimals' },
-  { v: 'date', l: 'Date & Time' },
-  { v: 'selection', l: 'Selection' },
+const invoiceFields = [
+  { v: 'Supplier Name', l: 'Supplier Name', type: 'string' },
+  { v: 'Date', l: 'Date', type: 'date' },
 ];
 
 const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -18,21 +15,17 @@ const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replac
 export default function CreateInvoiceAttribute() {
   const navigate = useNavigate();
   const { invoiceAttributes, addInvoiceAttribute, showToast } = useStore();
-  const [draft, setDraft] = useState({ name: '', apiKey: '', type: 'string', masterSource: 'Customer' });
+  const [invoiceField, setInvoiceField] = useState(invoiceFields[0].v);
 
   const save = () => {
-    const name = draft.name.trim();
-    const apiKey = draft.apiKey.trim() || slugify(name);
-    if (!name) { showToast('Attribute name is required'); return; }
-    if (invoiceAttributes.some(a => a.name.toLowerCase() === name.toLowerCase())) {
-      showToast('An attribute with this name already exists');
+    const name = invoiceField;
+    const apiKey = slugify(name);
+    const type = invoiceFields.find(f => f.v === invoiceField).type;
+    if (invoiceAttributes.some(a => a.invoiceField === invoiceField)) {
+      showToast(`An Invoice Attribute for "${invoiceField}" already exists`);
       return;
     }
-    if (invoiceAttributes.some(a => a.apiKey === apiKey)) {
-      showToast('API & File Key must be unique');
-      return;
-    }
-    const id = addInvoiceAttribute({ name, apiKey, type: draft.type, masterSource: draft.masterSource });
+    const id = addInvoiceAttribute({ name, apiKey, type, invoiceField });
     showToast(`"${name}" invoice attribute created`);
     navigate(`${SETTINGS_PATH}/invoice-attributes/${id}`);
   };
@@ -45,55 +38,28 @@ export default function CreateInvoiceAttribute() {
         </button>
         <div>
           <h1 className="text-xl font-semibold text-text">Add New Invoice Attribute</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Validates OCR-scanned invoice fields against verified master data (e.g. scanned stockist name against a verified stockist list).</p>
+          <p className="text-sm text-text-secondary mt-0.5">Validates a scanned invoice field against master data you upload for it.</p>
         </div>
       </div>
 
       <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)]">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-text">Attribute Details</h2>
-          <p className="text-xs text-text-secondary mt-1">You can add attributes based on how you want to map them in the rule engine.</p>
+          <p className="text-xs text-text-secondary mt-1">Select which scanned invoice field this attribute validates.</p>
         </div>
         <div className="p-6 flex flex-col gap-4">
           <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1.5">Attribute Name</label>
-            <input
-              type="text"
-              value={draft.name}
-              onChange={e => setDraft(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g. Stockist Name"
-              className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1.5">Data Type</label>
+            <label className="text-xs font-semibold text-text-secondary block mb-1.5">Invoice Field</label>
             <select
-              value={draft.type}
-              onChange={e => setDraft(prev => ({ ...prev, type: e.target.value }))}
+              value={invoiceField}
+              onChange={e => setInvoiceField(e.target.value)}
               className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary bg-surface"
             >
-              {attributeTypes.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
+              {invoiceFields.map(f => <option key={f.v} value={f.v}>{f.l}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1.5">API & File Key</label>
-            <input
-              type="text"
-              value={draft.apiKey}
-              onChange={e => setDraft(prev => ({ ...prev, apiKey: e.target.value }))}
-              placeholder={draft.name ? slugify(draft.name) : 'auto-generated from name'}
-              className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary font-mono"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-text-secondary block mb-1.5">Validated Against</label>
-            <select
-              value={draft.masterSource}
-              onChange={e => setDraft(prev => ({ ...prev, masterSource: e.target.value }))}
-              className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-text outline-none focus:border-primary bg-surface"
-            >
-              <option value="Customer">Customer</option>
-            </select>
+            <p className="text-xs text-text-secondary mt-1.5">
+              API &amp; File Key: <span className="font-mono text-text">{slugify(invoiceField)}</span> — name the CSV column for this attribute's master data upload accordingly.
+            </p>
           </div>
         </div>
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-border">

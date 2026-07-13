@@ -10,7 +10,7 @@ const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replac
 export default function CreateLookupAttribute() {
   const navigate = useNavigate();
   const { matchKeys, addMatchKey, showToast } = useStore();
-  const [draft, setDraft] = useState({ name: '', apiKey: '', type: 'string' });
+  const [draft, setDraft] = useState({ name: '', apiKey: '', type: 'string', unique: false, mandatory: true });
 
   const save = () => {
     const name = draft.name.trim();
@@ -24,7 +24,7 @@ export default function CreateLookupAttribute() {
       showToast('API & File Key must be unique');
       return;
     }
-    const id = addMatchKey({ name, apiKey, type: draft.type });
+    const id = addMatchKey({ name, apiKey, type: draft.type, unique: draft.unique, mandatory: draft.mandatory });
     showToast(`"${name}" Lookup Attribute created`);
     navigate(`${SETTINGS_PATH}/lookup-attributes/${id}`);
   };
@@ -77,6 +77,26 @@ export default function CreateLookupAttribute() {
               <option value="string">String</option>
               <option value="int">Number</option>
             </select>
+          </div>
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 text-sm text-text cursor-pointer">
+              <input
+                type="checkbox"
+                checked={draft.unique}
+                onChange={e => setDraft(prev => ({ ...prev, unique: e.target.checked }))}
+                className="w-4 h-4"
+              />
+              Unique per Product Code
+            </label>
+            <label title="All Lookup Attributes are mandatory" className="flex items-center gap-2 text-sm text-text cursor-not-allowed">
+              <input
+                type="checkbox"
+                checked={draft.mandatory}
+                disabled
+                className="w-4 h-4"
+              />
+              Field is mandatory
+            </label>
           </div>
         </div>
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-border">
