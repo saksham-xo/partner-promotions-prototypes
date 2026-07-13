@@ -60,14 +60,16 @@ export function StoreProvider({ children }) {
 
   // id is just the React key / toggle target — there is no user-facing reference ID.
   const [catalogueRecords, setCatalogueRecords] = useState([
-    { id: '1', code: '502896', name: 'Injection Vial 10ml', active: true, dateUploaded: '02 Jul, 2026' },
-    { id: '2', code: '514812', name: 'Glucose Monitor Kit', active: true, dateUploaded: '02 Jul, 2026' },
-    { id: '3', code: '514355', name: 'Insulin Pen 3ml', active: true, dateUploaded: '02 Jul, 2026' },
-    { id: '4', code: '503541', name: 'Antibiotic Tab', active: true, dateUploaded: '02 Jul, 2026' },
-    { id: '5', code: '514341', name: 'Paracetamol 500mg', active: true, dateUploaded: '05 Jul, 2026' },
-    { id: '6', code: '514320', name: 'Iron Supplement Tab', active: true, dateUploaded: '05 Jul, 2026' },
-    { id: '7', code: '512067', name: 'Syringe Pack 5ml', active: true, dateUploaded: '05 Jul, 2026' },
-    { id: '8', code: '509214', name: 'TAIXIN FORCE DRY SYRUP', active: true, dateUploaded: '08 Jul, 2026' },
+    { id: '1', code: '502896', name: 'Injection Vial 10ml', active: true, dateUploaded: '02 Jul, 2026', source: 'Uploaded' },
+    { id: '2', code: '514812', name: 'Glucose Monitor Kit', active: true, dateUploaded: '02 Jul, 2026', source: 'Uploaded' },
+    { id: '3', code: '514355', name: 'Insulin Pen 3ml', active: true, dateUploaded: '02 Jul, 2026', source: 'Uploaded' },
+    { id: '4', code: '503541', name: 'Antibiotic Tab', active: true, dateUploaded: '02 Jul, 2026', source: 'Uploaded' },
+    { id: '5', code: '514341', name: 'Paracetamol 500mg', active: true, dateUploaded: '05 Jul, 2026', source: 'Learned' },
+    { id: '6', code: '514320', name: 'Iron Supplement Tab', active: true, dateUploaded: '05 Jul, 2026', source: 'Learned' },
+    { id: '7', code: '512067', name: 'Syringe Pack 5ml', active: true, dateUploaded: '05 Jul, 2026', source: 'Uploaded' },
+    { id: '8', code: '509214', name: 'TAIXIN FORCE DRY SYRUP', active: true, dateUploaded: '08 Jul, 2026', source: 'Learned' },
+    { id: '9', code: '514341', name: 'Paracetmol 500mg', active: true, dateUploaded: '05 Jul, 2026', source: 'Learned' },
+    { id: '10', code: '511782', name: 'Multivitamin Capsule', active: true, dateUploaded: '08 Jul, 2026', source: 'Uploaded' },
   ]);
   const toggleCatalogueRecord = (recordId) => {
     const record = catalogueRecords.find(r => r.id === recordId);
@@ -81,12 +83,12 @@ export function StoreProvider({ children }) {
     {
       id: 'MKEY-001', name: 'Batch ID', apiKey: 'batch_id', type: 'string', unique: false, mandatory: true,
       records: [
-        { id: 'MKREC-001', keyValue: '046L23PK', skuCode: '502896', active: true },
-        { id: 'MKREC-002', keyValue: '512K24TB', skuCode: '514812', active: true },
-        { id: 'MKREC-003', keyValue: '3311K25CP', skuCode: '514355', active: true },
-        { id: 'MKREC-004', keyValue: '9927L24SY', skuCode: '503541', active: true },
-        { id: 'MKREC-005', keyValue: '7742K23TB', skuCode: '514341', active: false },
-        { id: 'MKREC-006', keyValue: '1180L22PK', skuCode: '502896', active: true },
+        { id: 'MKREC-001', keyValue: '046L23PK', skuCode: '502896', active: true, dateUploaded: '02 Jul, 2026' },
+        { id: 'MKREC-002', keyValue: '512K24TB', skuCode: '514812', active: true, dateUploaded: '02 Jul, 2026' },
+        { id: 'MKREC-003', keyValue: '3311K25CP', skuCode: '514355', active: true, dateUploaded: '02 Jul, 2026' },
+        { id: 'MKREC-004', keyValue: '9927L24SY', skuCode: '503541', active: true, dateUploaded: '02 Jul, 2026' },
+        { id: 'MKREC-005', keyValue: '7742K23TB', skuCode: '514341', active: false, dateUploaded: '02 Jul, 2026' },
+        { id: 'MKREC-006', keyValue: '1180L22PK', skuCode: '502896', active: true, dateUploaded: '02 Jul, 2026' },
       ],
     },
   ]);
@@ -102,9 +104,10 @@ export function StoreProvider({ children }) {
     setMatchKeys(prev => prev.filter(k => k.id !== id || !k.draft));
   };
   const addMatchKeyRecord = (matchKeyId, record) => {
+    const dateUploaded = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     setMatchKeys(prev => prev.map(k => k.id !== matchKeyId ? k : {
       ...k,
-      records: [...k.records, { ...record, id: 'MKREC-' + String(k.records.length + 1).padStart(3, '0'), active: true }],
+      records: [...k.records, { ...record, id: 'MKREC-' + String(k.records.length + 1).padStart(3, '0'), active: true, dateUploaded }],
     }));
   };
   const updateMatchKeyRecord = (matchKeyId, recordId, updates) => {
@@ -125,11 +128,11 @@ export function StoreProvider({ children }) {
 
   const [invoiceAttributes, setInvoiceAttributes] = useState([
     {
-      id: 'IATTR-001', name: 'Supplier Name', type: 'string', apiKey: 'supplier_name', invoiceField: 'Supplier Name',
+      id: 'IATTR-001', name: 'Supplier Name', type: 'string', apiKey: 'supplier_name', invoiceField: 'Supplier Name', unique: false, mandatory: true,
       records: [
-        { id: 'IAREC-001', keyValue: 'SADGURU AGENCY', active: true },
-        { id: 'IAREC-002', keyValue: 'FOCUS MEDISALES', active: true },
-        { id: 'IAREC-003', keyValue: 'NEW GARODIA DISTRIBUTORS', active: true },
+        { id: 'IAREC-001', keyValue: 'SADGURU AGENCY', active: true, dateUploaded: '02 Jul, 2026' },
+        { id: 'IAREC-002', keyValue: 'FOCUS MEDISALES', active: true, dateUploaded: '02 Jul, 2026' },
+        { id: 'IAREC-003', keyValue: 'NEW GARODIA DISTRIBUTORS', active: true, dateUploaded: '02 Jul, 2026' },
       ],
     },
   ]);
@@ -145,9 +148,10 @@ export function StoreProvider({ children }) {
     setInvoiceAttributes(prev => prev.filter(a => a.id !== id || !a.draft));
   };
   const addInvoiceAttributeRecord = (attrId, record) => {
+    const dateUploaded = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     setInvoiceAttributes(prev => prev.map(a => a.id !== attrId ? a : {
       ...a,
-      records: [...a.records, { ...record, id: 'IAREC-' + String(a.records.length + 1).padStart(3, '0'), active: true }],
+      records: [...a.records, { ...record, id: 'IAREC-' + String(a.records.length + 1).padStart(3, '0'), active: true, dateUploaded }],
     }));
   };
   const toggleInvoiceAttributeRecord = (attrId, recordId) => {

@@ -1,6 +1,6 @@
-reference_id,product_code,product_name,status
-1,PRD-1001,Sample Product A,N
-2,PRD-1002,Sample Product B,N
-3,PRD-1003,Sample Product C,N
-4,PRD-1004,Sample Product D,N
-5,PRD-1005,Sample Product E,N
+product_code,product_name,active
+PRD-1001,Sample Product A,y
+PRD-1002,Sample Product B,y
+PRD-1002,Sample Product B Alias,y
+PRD-1003,Sample Product C,y
+PRD-1004,Sample Product D,n

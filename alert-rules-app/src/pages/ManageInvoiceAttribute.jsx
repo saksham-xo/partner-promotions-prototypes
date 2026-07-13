@@ -4,7 +4,7 @@ import { ChevronLeft, Upload, Download, AlertTriangle } from 'lucide-react';
 import { useStore } from '../data/store';
 
 const SETTINGS_PATH = '/partner-promotions/invoice-management/settings';
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 function Toggle({ checked, onChange, title }) {
   return (
@@ -18,9 +18,9 @@ function Toggle({ checked, onChange, title }) {
 
 export default function ManageInvoiceAttribute() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id: apiKey } = useParams();
   const { invoiceAttributes, toggleInvoiceAttributeRecord, showToast, confirmInvoiceAttribute, discardInvoiceAttributeDraft } = useStore();
-  const target = invoiceAttributes.find(a => a.id === id) || null;
+  const target = invoiceAttributes.find(a => a.apiKey === apiKey) || null;
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -50,14 +50,14 @@ export default function ManageInvoiceAttribute() {
   };
   const submitUpload = () => {
     setShowUploadModal(false);
-    showToast(`${target.name} master data uploaded — processing records`);
+    showToast('Master data uploaded — processing records');
   };
   const downloadSample = () => {
     const rows = [
-      `${target.apiKey},status`,
-      'SADGURU AGENCY,N',
-      'FOCUS MEDISALES,N',
-      'NEW GARODIA DISTRIBUTORS,N',
+      `${target.apiKey},active`,
+      'SADGURU AGENCY,y',
+      'FOCUS MEDISALES,y',
+      'NEW GARODIA DISTRIBUTORS,y',
     ];
     const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -70,19 +70,19 @@ export default function ManageInvoiceAttribute() {
   };
 
   const acceptToggle = () => {
-    toggleInvoiceAttributeRecord(id, pendingToggle.id);
+    toggleInvoiceAttributeRecord(target.id, pendingToggle.id);
     setPendingToggle(null);
   };
 
   return (
     <div>
       <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)] p-4 px-6 flex items-center gap-3 mb-6">
-        <button onClick={() => { discardInvoiceAttributeDraft(id); navigate(SETTINGS_PATH); }} className="hover:bg-bg rounded-lg p-2 cursor-pointer transition-colors">
+        <button onClick={() => { discardInvoiceAttributeDraft(target.id); navigate(SETTINGS_PATH); }} className="hover:bg-bg rounded-lg p-2 cursor-pointer transition-colors">
           <ChevronLeft size={20} className="text-text" />
         </button>
         <div>
           <h1 className="text-xl font-semibold text-text">Manage {target.name}</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Search, add, edit, or bulk-upload {target.name} master data.</p>
+          <p className="text-sm text-text-secondary mt-0.5">Search, add, edit, or bulk-upload master data.</p>
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export default function ManageInvoiceAttribute() {
             type="text"
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder={`Search by ${target.name}`}
+            placeholder="Search by value"
             className="flex-1 px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
           />
           <button
@@ -102,7 +102,7 @@ export default function ManageInvoiceAttribute() {
             <Upload size={14} /> Upload CSV
           </button>
           <button
-            onClick={() => navigate(`/partner-promotions/invoice-management/settings/invoice-attributes/${id}/mapping/create`)}
+            onClick={() => navigate(`/partner-promotions/invoice-management/settings/invoice-attributes/${apiKey}/mapping/create`)}
             className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-[#354499] cursor-pointer whitespace-nowrap"
           >
             + Add Mapping
@@ -113,15 +113,17 @@ export default function ManageInvoiceAttribute() {
             <thead>
               <tr className="text-left text-text-secondary text-xs">
                 <th className="py-2 pr-3 font-medium">{target.name}</th>
+                <th className="py-2 pr-3 font-medium">Date Uploaded</th>
                 <th className="py-2 pr-3 font-medium">Active</th>
               </tr>
             </thead>
             <tbody>
               {pagedRecords.length === 0 ? (
-                <tr><td colSpan={2} className="py-8 text-center text-text-secondary text-sm">No records found.</td></tr>
+                <tr><td colSpan={3} className="py-8 text-center text-text-secondary text-sm">No records found.</td></tr>
               ) : pagedRecords.map(r => (
                 <tr key={r.id} className="border-t border-border">
                   <td className="py-2.5 pr-3 text-xs text-text">{r.keyValue}</td>
+                  <td className="py-2.5 pr-3 text-xs text-text-secondary">{r.dateUploaded}</td>
                   <td className="py-2.5 pr-3">
                     <Toggle checked={r.active} onChange={() => setPendingToggle(r)} title="Once uploaded, records can only be disabled — not edited" />
                   </td>
@@ -157,7 +159,7 @@ export default function ManageInvoiceAttribute() {
 
       <div className="flex justify-end mt-4">
         <button
-          onClick={() => { confirmInvoiceAttribute(id); showToast(`${target.name} mappings saved`); navigate(SETTINGS_PATH); }}
+          onClick={() => { confirmInvoiceAttribute(target.id); showToast('Mappings saved'); navigate(SETTINGS_PATH); }}
           disabled={target.records.length === 0}
           className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -170,8 +172,8 @@ export default function ManageInvoiceAttribute() {
           <div className="bg-surface rounded-lg shadow-xl w-[480px]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
-                <div className="text-base font-semibold text-text">Upload {target.name} Master Data</div>
-                <p className="text-xs text-text-secondary mt-1">Upload verified {target.name} values in bulk to populate this master list.</p>
+                <div className="text-base font-semibold text-text">Upload Master Data</div>
+                <p className="text-xs text-text-secondary mt-1">Upload a CSV file to add master values in bulk. Every row is added as a new value — existing values can't be edited, only activated or deactivated. Use the active column (y/n) to control status.</p>
               </div>
               <button onClick={() => setShowUploadModal(false)} className="bg-transparent border-none cursor-pointer text-xl text-text-secondary">&times;</button>
             </div>
@@ -194,7 +196,7 @@ export default function ManageInvoiceAttribute() {
               </button>
               <div className="flex gap-2">
                 <button onClick={() => setShowUploadModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">Cancel</button>
-                <button onClick={submitUpload} disabled={!uploadFile} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+                <button onClick={submitUpload} disabled={!uploadFile} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Submit</button>
               </div>
             </div>
           </div>

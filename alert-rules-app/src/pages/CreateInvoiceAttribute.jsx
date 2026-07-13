@@ -16,6 +16,7 @@ export default function CreateInvoiceAttribute() {
   const navigate = useNavigate();
   const { invoiceAttributes, addInvoiceAttribute, showToast } = useStore();
   const [invoiceField, setInvoiceField] = useState(invoiceFields[0].v);
+  const [unique, setUnique] = useState(false);
 
   const save = () => {
     const name = invoiceField;
@@ -25,9 +26,9 @@ export default function CreateInvoiceAttribute() {
       showToast(`An Invoice Attribute for "${invoiceField}" already exists`);
       return;
     }
-    const id = addInvoiceAttribute({ name, apiKey, type, invoiceField });
+    addInvoiceAttribute({ name, apiKey, type, invoiceField, unique, mandatory: true });
     showToast(`"${name}" invoice attribute created`);
-    navigate(`${SETTINGS_PATH}/invoice-attributes/${id}`);
+    navigate(`${SETTINGS_PATH}/invoice-attributes/${apiKey}`);
   };
 
   return (
@@ -60,6 +61,26 @@ export default function CreateInvoiceAttribute() {
             <p className="text-xs text-text-secondary mt-1.5">
               API &amp; File Key: <span className="font-mono text-text">{slugify(invoiceField)}</span> — name the CSV column for this attribute's master data upload accordingly.
             </p>
+          </div>
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 text-sm text-text cursor-pointer">
+              <input
+                type="checkbox"
+                checked={unique}
+                onChange={e => setUnique(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Field is unique
+            </label>
+            <label title="All Invoice Attributes are mandatory" className="flex items-center gap-2 text-sm text-text cursor-not-allowed">
+              <input
+                type="checkbox"
+                checked={true}
+                disabled
+                className="w-4 h-4"
+              />
+              Field is mandatory
+            </label>
           </div>
         </div>
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-border">

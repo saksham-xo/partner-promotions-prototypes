@@ -4,7 +4,7 @@ import { ChevronLeft, Upload, Download, AlertTriangle } from 'lucide-react';
 import { useStore } from '../data/store';
 
 const SETTINGS_PATH = '/partner-promotions/invoice-management/settings';
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 function Toggle({ checked, onChange, title }) {
   return (
@@ -21,6 +21,7 @@ export default function ManageCatalogue() {
   const { catalogueRecords, toggleCatalogueRecord, showToast } = useStore();
 
   const [search, setSearch] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [pendingToggle, setPendingToggle] = useState(null);
@@ -28,8 +29,9 @@ export default function ManageCatalogue() {
   const fileInputRef = useRef(null);
 
   const filteredRecords = catalogueRecords.filter(r =>
-    r.code.toLowerCase().includes(search.toLowerCase()) ||
-    r.name.toLowerCase().includes(search.toLowerCase())
+    (r.code.toLowerCase().includes(search.toLowerCase()) ||
+      r.name.toLowerCase().includes(search.toLowerCase())) &&
+    (sourceFilter === 'all' || r.source === sourceFilter)
   );
   const pagedRecords = filteredRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -74,7 +76,7 @@ export default function ManageCatalogue() {
         </button>
         <div>
           <h1 className="text-xl font-semibold text-text">Manage Catalogue</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Search, or bulk-upload Product Code &amp; Product Name pairs.</p>
+          <p className="text-sm text-text-secondary mt-0.5">Search, or bulk-upload Product Code &amp; Product Name pairs. This list also includes combinations learned by the system over time, marked as such.</p>
         </div>
       </div>
 
@@ -87,6 +89,15 @@ export default function ManageCatalogue() {
             placeholder="Search by Product Code or Product Name"
             className="flex-1 px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
           />
+          <select
+            value={sourceFilter}
+            onChange={e => { setSourceFilter(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary bg-surface"
+          >
+            <option value="all">All Sources</option>
+            <option value="Uploaded">Uploaded</option>
+            <option value="Learned">Learned</option>
+          </select>
           <button
             onClick={openUploadModal}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-[#354499] cursor-pointer whitespace-nowrap"
@@ -101,17 +112,23 @@ export default function ManageCatalogue() {
                 <th className="py-2 pr-3 font-medium">Product Code</th>
                 <th className="py-2 pr-3 font-medium">Product Name</th>
                 <th className="py-2 pr-3 font-medium">Date Uploaded</th>
+                <th className="py-2 pr-3 font-medium">Source</th>
                 <th className="py-2 pr-3 font-medium">Active</th>
               </tr>
             </thead>
             <tbody>
               {pagedRecords.length === 0 ? (
-                <tr><td colSpan={4} className="py-8 text-center text-text-secondary text-sm">No records found.</td></tr>
+                <tr><td colSpan={5} className="py-8 text-center text-text-secondary text-sm">No records found.</td></tr>
               ) : pagedRecords.map(r => (
                 <tr key={r.id} className="border-t border-border">
                   <td className="py-2.5 pr-3 font-mono text-xs text-text">{r.code}</td>
                   <td className="py-2.5 pr-3 text-xs text-text">{r.name}</td>
                   <td className="py-2.5 pr-3 text-xs text-text-secondary">{r.dateUploaded}</td>
+                  <td className="py-2.5 pr-3">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium ${r.source === 'Learned' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
+                      {r.source}
+                    </span>
+                  </td>
                   <td className="py-2.5 pr-3">
                     <Toggle checked={r.active} onChange={() => setPendingToggle(r)} title="Once uploaded, records can only be disabled — not edited" />
                   </td>
@@ -174,7 +191,7 @@ export default function ManageCatalogue() {
               </button>
               <div className="flex gap-2">
                 <button onClick={() => setShowUploadModal(false)} className="text-primary px-4 py-2 rounded text-sm font-medium hover:bg-bg cursor-pointer">Cancel</button>
-                <button onClick={submitUpload} disabled={!uploadFile} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+                <button onClick={submitUpload} disabled={!uploadFile} className="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Submit</button>
               </div>
             </div>
           </div>

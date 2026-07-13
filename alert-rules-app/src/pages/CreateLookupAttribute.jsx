@@ -24,9 +24,9 @@ export default function CreateLookupAttribute() {
       showToast('API & File Key must be unique');
       return;
     }
-    const id = addMatchKey({ name, apiKey, type: draft.type, unique: draft.unique, mandatory: draft.mandatory });
+    addMatchKey({ name, apiKey, type: draft.type, unique: draft.unique, mandatory: draft.mandatory });
     showToast(`"${name}" Lookup Attribute created`);
-    navigate(`${SETTINGS_PATH}/lookup-attributes/${id}`);
+    navigate(`${SETTINGS_PATH}/lookup-attributes/${apiKey}`);
   };
 
   return (

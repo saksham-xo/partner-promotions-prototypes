@@ -5,22 +5,22 @@ import { useStore } from '../data/store';
 
 export default function MappingForm() {
   const navigate = useNavigate();
-  const { id, mappingId } = useParams();
+  const { id: apiKey, mappingId } = useParams();
   const { matchKeys, addMatchKeyRecord, updateMatchKeyRecord, showToast } = useStore();
-  const manageMatchKeyTarget = matchKeys.find(k => k.id === id) || null;
-  const managePath = `/partner-promotions/invoice-management/settings/lookup-attributes/${id}`;
+  const manageMatchKeyTarget = matchKeys.find(k => k.apiKey === apiKey) || null;
+  const managePath = `/partner-promotions/invoice-management/settings/lookup-attributes/${apiKey}`;
   const existingRecord = mappingId ? manageMatchKeyTarget?.records.find(r => r.id === mappingId) : null;
   const [draft, setDraft] = useState({ keyValue: existingRecord?.keyValue || '', skuCode: existingRecord?.skuCode || '' });
 
   const save = () => {
     const keyValue = draft.keyValue.trim();
     const skuCode = draft.skuCode.trim();
-    if (!keyValue || !skuCode) { showToast(`${manageMatchKeyTarget?.name || 'Lookup Attribute'} value and Product Code are both required`); return; }
+    if (!keyValue || !skuCode) { showToast('Value and Product Code are both required'); return; }
     if (mappingId) {
-      updateMatchKeyRecord(id, mappingId, { keyValue, skuCode });
+      updateMatchKeyRecord(manageMatchKeyTarget.id, mappingId, { keyValue, skuCode });
       showToast('Mapping updated');
     } else {
-      addMatchKeyRecord(id, { keyValue, skuCode });
+      addMatchKeyRecord(manageMatchKeyTarget.id, { keyValue, skuCode });
       showToast('Mapping added');
     }
     navigate(managePath);
@@ -41,7 +41,7 @@ export default function MappingForm() {
       <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)]">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-text">Mapping Details</h2>
-          <p className="text-xs text-text-secondary mt-1">Map a {manageMatchKeyTarget?.name || 'Lookup Attribute'} value to its Product Code.</p>
+          <p className="text-xs text-text-secondary mt-1">Map a value to its Product Code.</p>
         </div>
         <div className="p-6 flex flex-col gap-4">
           <div>

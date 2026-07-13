@@ -310,13 +310,6 @@ export default function AlertRules() {
                 <>
                 <div className="flex justify-end gap-2 px-4 py-3 border-b border-border bg-surface">
                   <button
-                    disabled
-                    title="Coming soon"
-                    className="flex items-center gap-1.5 text-primary border border-primary/30 px-4 py-2 rounded text-sm font-medium cursor-not-allowed opacity-40"
-                  >
-                    + Add Catalogue Attribute
-                  </button>
-                  <button
                     onClick={() => navigate('/partner-promotions/invoice-management/settings/catalogue')}
                     disabled={isDefaultMode}
                     className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-[#354499] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
@@ -327,7 +320,7 @@ export default function AlertRules() {
                 <table className="w-full table-fixed border-t border-border">
                   <thead>
                     <tr>
-                      {[['Attribute name', 'w-[25%]'], ['Data type', 'w-[15%]'], ['API & File Key', 'w-[25%]'], ['Field is unique', 'w-[17.5%]'], ['Field is mandatory', 'w-[17.5%]']].map(([h, w]) => (
+                      {[['Attribute name', 'w-[220px]'], ['Data type', 'w-[130px]'], ['API & File Key', 'w-[200px]'], ['Field is unique', ''], ['Field is mandatory', '']].map(([h, w]) => (
                         <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap ${w}`}>{h}</th>
                       ))}
                     </tr>
@@ -357,7 +350,7 @@ export default function AlertRules() {
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
                 <button onClick={() => toggleAccordion('local')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
-                    <span className="text-sm font-semibold text-text block">Line Item Lookup Attributes</span>
+                    <span className="text-sm font-semibold text-text block">Lookup Attributes</span>
                     <span className="text-xs text-text-secondary font-normal block mt-0.5">Resolves OCR-scanned line item product names to the correct product code.</span>
                   </span>
                   {openAccordions.local ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
@@ -384,7 +377,7 @@ export default function AlertRules() {
                   <table className="w-full table-fixed">
                     <thead>
                       <tr>
-                        {[['Attribute name', 'w-[16%]'], ['Data type', 'w-[11%]'], ['API & File Key', 'w-[19%]'], ['Unique per Product Code', 'w-[20%]'], ['Field is mandatory', 'w-[15%]'], ['Actions', 'w-[11%]']].map(([h, w]) => (
+                        {[['Attribute name', 'w-[220px]'], ['Data type', 'w-[130px]'], ['API & File Key', 'w-[200px]'], ['Unique per Product Code', ''], ['Field is mandatory', ''], ['Actions', 'w-[80px]']].map(([h, w]) => (
                           <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] ${h === 'Unique per Product Code' ? 'whitespace-normal leading-tight' : 'whitespace-nowrap'} ${w}`}>{h}</th>
                         ))}
                       </tr>
@@ -406,7 +399,7 @@ export default function AlertRules() {
                             {openKebab === a.id && (
                               <div className="absolute right-4 top-9 z-10 bg-surface border border-border rounded-lg shadow-lg w-44 py-1" onMouseLeave={() => setOpenKebab(null)}>
                                 <button
-                                  onClick={() => { navigate(`/partner-promotions/invoice-management/settings/lookup-attributes/${a.id}`); setOpenKebab(null); }}
+                                  onClick={() => { navigate(`/partner-promotions/invoice-management/settings/lookup-attributes/${a.apiKey}`); setOpenKebab(null); }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg cursor-pointer"
                                 >
                                   Edit
@@ -430,7 +423,7 @@ export default function AlertRules() {
               <div className="w-full flex items-center justify-between px-4 py-3.5 bg-surface border-b border-[#dadcee] rounded-t-lg">
                 <button onClick={() => toggleAccordion('invoice')} className="flex-1 flex items-center justify-between cursor-pointer">
                   <span className="text-left">
-                    <span className="text-sm font-semibold text-text block">Invoice Detail Validation Attributes</span>
+                    <span className="text-sm font-semibold text-text block">Invoice Attributes</span>
                     <span className="text-xs text-text-secondary font-normal block mt-0.5">Validates OCR-scanned invoice fields against verified master data (e.g. scanned stockist name against a verified stockist list).</span>
                   </span>
                   {openAccordions.invoice ? <ChevronUp size={16} className="text-text-secondary shrink-0" /> : <ChevronDown size={16} className="text-text-secondary shrink-0" />}
@@ -457,7 +450,7 @@ export default function AlertRules() {
                   <table className="w-full table-fixed">
                     <thead>
                       <tr>
-                        {[['Attribute name', 'w-[30%]'], ['Data type', 'w-[17.5%]'], ['API & File Key', 'w-[30%]'], ['Actions', 'w-[22.5%]']].map(([h, w]) => (
+                        {[['Attribute name', 'w-[220px]'], ['Data type', 'w-[130px]'], ['API & File Key', 'w-[200px]'], ['Field is unique', ''], ['Field is mandatory', ''], ['Actions', 'w-[80px]']].map(([h, w]) => (
                           <th key={h} className={`text-left text-sm font-semibold px-4 py-2.5 bg-[#F6FAFC] text-[#4F516E] whitespace-nowrap ${w}`}>{h}</th>
                         ))}
                       </tr>
@@ -470,6 +463,8 @@ export default function AlertRules() {
                             <span className="highlight-span" style={attributeTypeColor[a.type]}>{attributeTypeLabel[a.type]}</span>
                           </td>
                           <td className="px-4 py-3 text-sm text-text-secondary font-mono">{a.apiKey}</td>
+                          <td className="px-4 py-3 text-sm text-text">{a.unique ? 'True' : 'False'}</td>
+                          <td className="px-4 py-3 text-sm text-text">{a.mandatory ? 'True' : 'False'}</td>
                           <td className="px-4 py-3 relative">
                             <button onClick={() => setOpenKebab(openKebab === a.id ? null : a.id)} className="p-1 text-text-secondary hover:text-text cursor-pointer">
                               <MoreHorizontal size={16} />
@@ -477,7 +472,7 @@ export default function AlertRules() {
                             {openKebab === a.id && (
                               <div className="absolute right-4 top-9 z-10 bg-surface border border-border rounded-lg shadow-lg w-44 py-1" onMouseLeave={() => setOpenKebab(null)}>
                                 <button
-                                  onClick={() => { navigate(`/partner-promotions/invoice-management/settings/invoice-attributes/${a.id}`); setOpenKebab(null); }}
+                                  onClick={() => { navigate(`/partner-promotions/invoice-management/settings/invoice-attributes/${a.apiKey}`); setOpenKebab(null); }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg cursor-pointer"
                                 >
                                   Edit

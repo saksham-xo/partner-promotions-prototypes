@@ -5,16 +5,16 @@ import { useStore } from '../data/store';
 
 export default function InvoiceMappingForm() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id: apiKey } = useParams();
   const { invoiceAttributes, addInvoiceAttributeRecord, showToast } = useStore();
-  const target = invoiceAttributes.find(a => a.id === id) || null;
-  const managePath = `/partner-promotions/invoice-management/settings/invoice-attributes/${id}`;
+  const target = invoiceAttributes.find(a => a.apiKey === apiKey) || null;
+  const managePath = `/partner-promotions/invoice-management/settings/invoice-attributes/${apiKey}`;
   const [draft, setDraft] = useState({ keyValue: '' });
 
   const save = () => {
     const keyValue = draft.keyValue.trim();
-    if (!keyValue) { showToast(`${target?.name || 'Invoice Attribute'} value is required`); return; }
-    addInvoiceAttributeRecord(id, { keyValue });
+    if (!keyValue) { showToast('Value is required'); return; }
+    addInvoiceAttributeRecord(target.id, { keyValue });
     showToast('Mapping added');
     navigate(managePath);
   };
@@ -34,7 +34,7 @@ export default function InvoiceMappingForm() {
       <div className="bg-surface rounded-lg shadow-[0_0_1px_1px_var(--color-border)]">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-text">Mapping Details</h2>
-          <p className="text-xs text-text-secondary mt-1">Add a {target?.name || 'Invoice Attribute'} value to the master list.</p>
+          <p className="text-xs text-text-secondary mt-1">Add a value to the master list.</p>
         </div>
         <div className="p-6 flex flex-col gap-4">
           <div>
