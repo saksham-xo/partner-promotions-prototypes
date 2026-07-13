@@ -55,6 +55,18 @@ export default function ManageLookupAttribute() {
     setShowUploadModal(false);
     showToast('Mapping file uploaded — processing records');
   };
+  const downloadAll = () => {
+    const rows = [`${target.apiKey},product_code,date_uploaded,active`];
+    target.records.forEach(r => rows.push(`${r.keyValue},${r.skuCode},${r.dateUploaded},${r.active ? 'y' : 'n'}`));
+    const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${target.apiKey}_attributes.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Records downloaded');
+  };
   const downloadSample = () => {
     const rows = [
       `${target.apiKey},product_code,active`,
@@ -98,6 +110,13 @@ export default function ManageLookupAttribute() {
             placeholder="Search by value or Product Code"
             className="flex-1 px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
           />
+          <button
+            onClick={downloadAll}
+            disabled={target.records.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary-light cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download size={14} /> Download
+          </button>
           <button
             onClick={openUploadModal}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary-light cursor-pointer whitespace-nowrap"

@@ -52,6 +52,18 @@ export default function ManageInvoiceAttribute() {
     setShowUploadModal(false);
     showToast('Master data uploaded — processing records');
   };
+  const downloadAll = () => {
+    const rows = [`${target.apiKey},date_uploaded,active`];
+    target.records.forEach(r => rows.push(`${r.keyValue},${r.dateUploaded},${r.active ? 'y' : 'n'}`));
+    const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${target.apiKey}_attributes.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Records downloaded');
+  };
   const downloadSample = () => {
     const rows = [
       `${target.apiKey},active`,
@@ -95,6 +107,13 @@ export default function ManageInvoiceAttribute() {
             placeholder="Search by value"
             className="flex-1 px-3 py-2 border border-border rounded-lg text-sm text-text outline-none focus:border-primary"
           />
+          <button
+            onClick={downloadAll}
+            disabled={target.records.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary-light cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download size={14} /> Download
+          </button>
           <button
             onClick={openUploadModal}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary-light cursor-pointer whitespace-nowrap"

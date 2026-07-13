@@ -44,6 +44,18 @@ export default function ManageCatalogue() {
     setShowUploadModal(false);
     showToast('Catalogue file uploaded — table updated');
   };
+  const downloadAll = () => {
+    const rows = ['product_code,product_name,date_uploaded,source,active'];
+    catalogueRecords.forEach(r => rows.push(`${r.code},${r.name},${r.dateUploaded},${r.source},${r.active ? 'y' : 'n'}`));
+    const blob = new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'catalogue_attributes.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Records downloaded');
+  };
   const downloadSample = () => {
     const rows = [
       'product_code,product_name,active',
@@ -98,6 +110,13 @@ export default function ManageCatalogue() {
             <option value="Uploaded">Uploaded</option>
             <option value="Learned">Learned</option>
           </select>
+          <button
+            onClick={downloadAll}
+            disabled={catalogueRecords.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-primary border border-primary/30 hover:bg-primary-light cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download size={14} /> Download
+          </button>
           <button
             onClick={openUploadModal}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-[#354499] cursor-pointer whitespace-nowrap"

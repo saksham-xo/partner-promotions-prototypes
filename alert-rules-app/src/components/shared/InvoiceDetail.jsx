@@ -73,16 +73,22 @@ function inr(n) {
 }
 
 const TIER_STYLE = {
-  high: { bg: 'bg-[rgba(76,175,80,0.13)]', text: 'text-success', label: 'MATCH' },
-  medium: { bg: 'bg-pending-bg', text: 'text-[#B8860B]', label: 'NEEDS REVIEW' },
-  low: { bg: 'bg-[rgba(244,67,54,0.13)]', text: 'text-block', label: 'NO MATCH' },
+  high: { bg: 'bg-[rgba(76,175,80,0.13)]', text: 'text-success', label: 'MATCH', hint: 'More than 80% matching confidence' },
+  medium: { bg: 'bg-pending-bg', text: 'text-[#B8860B]', label: 'NEEDS REVIEW', hint: '65 - 80% matching confidence' },
+  low: { bg: 'bg-[rgba(244,67,54,0.13)]', text: 'text-block', label: 'NO MATCH', hint: 'Less than 65% matching confidence' },
 };
 
 function ConfidencePill({ tier }) {
   const s = TIER_STYLE[tier];
   return (
-    <span className={`inline-block px-2 py-1 rounded text-xs font-semibold text-center whitespace-nowrap ${s.bg} ${s.text}`}>
-      {s.label}
+    <span className="relative inline-block group">
+      <span className={`inline-block px-2 py-1 rounded text-xs font-semibold text-center whitespace-nowrap cursor-default ${s.bg} ${s.text}`}>
+        {s.label}
+      </span>
+      <span className="pointer-events-none opacity-0 group-hover:opacity-100 absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 rounded-md bg-[#1F2233] text-white text-xs font-medium whitespace-nowrap shadow-lg">
+        {s.hint}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1F2233]" />
+      </span>
     </span>
   );
 }
